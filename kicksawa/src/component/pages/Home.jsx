@@ -2,6 +2,19 @@ import Navbar from "../components/Navbar"
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import UrbanCultureSection from "../components/UrbanCultureSection";
+import FeaturedProductsSection from "../components/FeaturedProductsSection";
+import PopularSneakersSection from "../components/PopularSneakersSection";
+import Footer from "../components/Footer";
+import SingleProductPage from "./SingleProductPage";
+import ContactPage from "./ContactPage";
+import ExclusiveBrandsSection from "../components/ExclusiveBrandsSection";
+import CartPage from "./CartPage";
+import FavoritesPage from "./FavoritesPage";
+import SignUpPage from "./SignUpPage";
+import LoginPage from "./LoginPage";
+import UserProfilePage from "./UserProfilePage";
+import BrandsPage from "./BrandsPage";
+import ProductsPage from "./ProductsPage";
 
 function Home() {
   return (
@@ -43,7 +56,20 @@ function Home() {
       </div>
     </section>
     <UrbanCultureSection/>
+    <FeaturedProductsSection/>
+    <PopularSneakersSection/>
+    <SingleProductPage/>
+    <ContactPage/>
+    {/* <ExclusiveBrandsSection/> */}
+    <CartPage/>
+    <FavoritesPage/>
+    <SignUpPage/>
+    <LoginPage/>
+    <UserProfilePage/>
+    <BrandsPage/>
+    <ProductsPage/>
       </div>
+      <Footer/>
     </div>
   )
 }
