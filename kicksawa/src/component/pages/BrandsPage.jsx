@@ -6,6 +6,8 @@ import puma from '../../assets/imgs/puma.svg'
 import newbalance from '../../assets/imgs/new.svg'
 import reebok from '../../assets/imgs/reebok.svg'
 import underarmor from '../../assets/imgs/under-armour.svg'
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 
 const BrandCard = ({ brand }) => (
@@ -65,6 +67,8 @@ const BrandsPage = () => {
   ];
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">Our Brands</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -72,6 +76,8 @@ const BrandsPage = () => {
           <BrandCard key={brand.id} brand={brand} />
         ))}
       </div>
+    </div>
+    <Footer/>
     </div>
   );
 };

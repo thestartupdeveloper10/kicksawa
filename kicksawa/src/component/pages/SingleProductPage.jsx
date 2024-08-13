@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Heart, ShoppingBag, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, ShoppingBag } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const SingleProductPage = () => {
   const [selectedSize, setSelectedSize] = useState('');
@@ -23,6 +25,8 @@ const SingleProductPage = () => {
   };
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row -mx-4">
         {/* Product Images */}
@@ -89,6 +93,8 @@ const SingleProductPage = () => {
           </div>
         </div>
       </div>
+    </div>
+    <Footer/>
     </div>
   );
 };

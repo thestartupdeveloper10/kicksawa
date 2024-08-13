@@ -1,5 +1,8 @@
-import React, { useState, useRef } from 'react';
+/* eslint-disable no-unused-vars */
+import { useState, useRef } from 'react';
 import { User, Mail, Phone, MapPin, Edit2, Eye, EyeOff, Camera } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const UserProfilePage = () => {
   const [user, setUser] = useState({
@@ -52,6 +55,8 @@ const UserProfilePage = () => {
   };
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">User Profile</h1>
       
@@ -206,6 +211,8 @@ const UserProfilePage = () => {
           </table>
         </div>
       </div>
+    </div>
+    <Footer/>
     </div>
   );
 };

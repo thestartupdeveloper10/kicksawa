@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from 'react';
 import { Heart, User, ShoppingBag, Search, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const MenuItem = ({ href, children, onClick }) => (
-  <a href={href} className="text-black hover:text-gray-600" onClick={onClick}>
+  <Link to={href} className="text-black hover:text-gray-600" onClick={onClick}>
     {children}
-  </a>
+  </Link>
 );
 
 const Navbar = () => {
@@ -13,7 +15,7 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  const menuItems = ['HOME', 'SHOP', 'BRANDS', 'CONTACT'];
+  const menuItems = ['SHOP', 'BRANDS', 'CONTACT'];
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -38,13 +40,14 @@ const Navbar = () => {
           )}
 
           {/* Logo */}
-          <h1 className="text-2xl font-bold italic">Urban Cult.</h1>
-
+          <Link to='/'>
+          <h1 className="text-2xl font-bold italic">KICKsawa.</h1>
+          </Link>
           {/* Navigation links (desktop) */}
           {!isMobile && (
             <nav className="flex space-x-8">
               {menuItems.map((item) => (
-                <MenuItem key={item} href="#">{item}</MenuItem>
+                <MenuItem key={item} href={item.toLowerCase()==='shop'?'/products':`/${item.toLowerCase()}`}>{item}</MenuItem>
               ))}
             </nav>
           )}
@@ -52,9 +55,15 @@ const Navbar = () => {
           {/* Icons */}
           <div className="flex items-center space-x-4">
             <Search className="w-6 h-6" />
+            <Link to='/favorites'>
             <Heart className="w-6 h-6" />
+            </Link>
+            <Link to="/login">
             <User className="w-6 h-6" />
+            </Link>
+            <Link to='/cart'>
             <ShoppingBag className="w-6 h-6" />
+            </Link>
           </div>
         </div>
       </div>
@@ -65,7 +74,7 @@ const Navbar = () => {
           <ul className="space-y-6 text-center">
             {menuItems.map((item) => (
               <li key={item}>
-                <MenuItem href="#" onClick={toggleMenu}>{item}</MenuItem>
+                <MenuItem href={item.toLowerCase()==='shop'?'/products':`/${item.toLowerCase()}`} onClick={toggleMenu}>{item}</MenuItem>
               </li>
             ))}
           </ul>

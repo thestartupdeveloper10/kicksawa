@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Heart, ShoppingBag } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const ProductCard = ({ product }) => (
   <div className="bg-white shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105">
@@ -116,6 +118,8 @@ const ProductsPage = () => {
   const priceRanges = ["0-50", "51-100", "101-150", "151-200", "201+"];
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">All Products</h1>
       <div className="flex flex-col md:flex-row">
@@ -151,6 +155,8 @@ const ProductsPage = () => {
           )}
         </div>
       </div>
+    </div>
+    <Footer/>
     </div>
   );
 };

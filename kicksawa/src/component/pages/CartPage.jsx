@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => (
   <div className="flex items-center py-4 border-b">
@@ -47,6 +49,8 @@ const CartPage = () => {
   const total = subtotal + tax;
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
       {cartItems.length === 0 ? (
@@ -88,6 +92,8 @@ const CartPage = () => {
           </div>
         </div>
       )}
+    </div>
+    <Footer/>
     </div>
   );
 };

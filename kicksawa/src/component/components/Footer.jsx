@@ -1,4 +1,5 @@
 import { Truck, ShieldCheck, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
@@ -31,9 +32,21 @@ const Footer = () => {
           <div className="w-full md:w-1/4 px-4 mb-8">
             <h3 className="font-bold mb-4">GO TO</h3>
             <ul className="space-y-2">
-              {['HOME', 'SHOP', 'BRANDS', 'MY ACCOUNT', 'CONTACT US'].map((item) => (
-                <li key={item}><a href="#" className="text-sm hover:underline">{item}</a></li>
-              ))}
+                <li>
+                  <Link to="/" className="text-sm hover:underline">HOME</Link>
+                  </li>
+                  <li>
+                  <Link to="/products" className="text-sm hover:underline">SHOP</Link>
+                  </li>
+                  <li>
+                  <Link to="/brands" className="text-sm hover:underline">BRANDS</Link>
+                  </li>
+                  <li>
+                  <Link to="/user" className="text-sm hover:underline">MY ACCOUNT</Link>  
+                  </li>
+                  <li>
+                  <Link to="/contact" className="text-sm hover:underline">CONTACT US</Link>  
+                  </li>
             </ul>
           </div>
 

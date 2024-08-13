@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, ShoppingBag, X } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const FavoriteItem = ({ item, onRemove, onAddToCart }) => (
   <div className="flex items-center py-4 border-b">
@@ -45,8 +47,10 @@ const FavoritesPage = () => {
   };
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 flex items-center">
+      <h1 className="text-3xl justify-center font-bold mb-8 flex items-center">
         <Heart className="mr-2" /> Your Favorites
       </h1>
       {favorites.length === 0 ? (
@@ -73,6 +77,8 @@ const FavoritesPage = () => {
           </button>
         </div>
       )}
+    </div>
+    <Footer/>
     </div>
   );
 };

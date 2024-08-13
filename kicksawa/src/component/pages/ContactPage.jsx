@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -26,6 +28,8 @@ const ContactPage = () => {
   };
 
   return (
+    <div>
+      <Navbar/>
     <div className="container mx-auto px-4 py-12">
       <h1 className="text-4xl font-bold text-center mb-12">Contact Us</h1>
       
@@ -114,6 +118,8 @@ const ContactPage = () => {
           </div>
         </div>
       </div>
+    </div>
+    <Footer/>
     </div>
   );
 };
