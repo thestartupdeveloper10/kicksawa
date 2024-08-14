@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -92,9 +93,9 @@ const LoginPage = () => {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <a href="/signup" className="font-medium text-black hover:text-gray-800">
+            <Link to="/signup" className="font-medium text-black hover:text-gray-800">
               Sign up
-            </a>
+            </Link>
           </p>
         </div>
       </div>

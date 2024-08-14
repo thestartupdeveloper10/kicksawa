@@ -23,16 +23,16 @@ authRouter.post('/register', async (request, response) => {
 
 
 authRouter.post('/login', async (request, response) => {
-  const { username, password } = request.body
+  const { email, password } = request.body
 
-  const user = await User.findOne({ username })
+  const user = await User.findOne({ email })
   const passwordCorrect = user === null
     ? false
     : await bcrypt.compare(password, user.passwordHash)
 
   if (!(user && passwordCorrect)) {
     return response.status(401).json({
-      error: 'invalid username or password'
+      error: 'invalid email or password'
     })
   }
 
@@ -50,7 +50,7 @@ authRouter.post('/login', async (request, response) => {
 
   response
     .status(200)
-    .send({ token, username: user.username, name: user.name, isAdmin: user.isAdmin ,id:user._id })
+    .send({ token, email: user.email, name: user.name, isAdmin: user.isAdmin ,id:user._id })
 })
 
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const SignUpPage = () => {
   const [name, setName] = useState('');
@@ -12,7 +13,12 @@ const SignUpPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Here you would typically handle the sign-up logic
-    console.log('Sign up attempt with:', { name, email, password, confirmPassword });
+    if(password === confirmPassword) {
+      console.log('Sign up attempt with:', { name, email, password, confirmPassword });
+    }else{
+      console.log('password not match')
+    }
+    
   };
 
   return (
@@ -30,11 +36,11 @@ const SignUpPage = () => {
               <label htmlFor="name" className="sr-only">Full name</label>
               <input
                 id="name"
-                name="name"
+                name="username"
                 type="text"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
-                placeholder="Full name"
+                placeholder="Username"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -107,9 +113,9 @@ const SignUpPage = () => {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <a href="/login" className="font-medium text-black hover:text-gray-800">
+            <Link to="/login" className="font-medium text-black hover:text-gray-800">
               Sign in
-            </a>
+            </Link>
           </p>
         </div>
       </div>

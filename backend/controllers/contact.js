@@ -6,19 +6,27 @@ const {
     verifyTokenAndAdmin,
   } = require("./verifyToken");
 
-contactRouter.post('/contact',verifyToken, async (req, res) => {
+contactRouter.post('/',verifyToken, async (req, res) => {
+  const newContact = new Contact(req.body);
+
+  try {
+    const savedContact = await newContact.save();
+    res.status(200).json(savedContact);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+  });
+
+contactRouter.get("/", verifyTokenAndAdmin, async (req, res) => {
+    const query = req.query.new;
     try {
-        const contactData = new Contact({
-            name: req.body.name,
-            email: req.body.email,
-            subject: req.body.subject,
-            message:req.body.message
-        });
-  
-        await Contact.create(contactData);
-        res.redirect('/');
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Internal Server Error');
+      const contacts = query
+        ? await Contact.find().sort({ _id: -1 }).limit(5)
+        : await Contact.find();
+      res.status(200).json(contacts);
+    } catch (err) {
+      res.status(500).json(err);
     }
   });
+
+module.exports = contactRouter
