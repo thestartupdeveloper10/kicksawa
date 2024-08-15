@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from "react-redux";
+import { deleteProduct, getProducts } from "../../redux/apiCalls";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from 'react-router-dom';
 
 const Products = () => {
-  const [products, setProducts] = useState([
-    { id: 1, title: 'Smartphone X', price: 699.99, inStock: true },
-    { id: 2, title: 'Laptop Pro', price: 1299.99, inStock: true },
-    { id: 3, title: 'Wireless Earbuds', price: 149.99, inStock: false },
-    { id: 4, title: 'Smart Watch', price: 249.99, inStock: true },
-    { id: 5, title: 'Gaming Console', price: 499.99, inStock: true },
-  ]);
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.product.products);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    getProducts(dispatch);
+  }, [dispatch]);
+
+  const handleDelete = (id) => {
+    deleteProduct(id, dispatch);
+  };
 
   const filteredProducts = products.filter(product =>
     product.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -52,7 +57,7 @@ const Products = () => {
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow key={product._id}>
                   <TableCell className="font-medium text-gray-900 dark:text-gray-100">{product.title}</TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300">${product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300">
@@ -63,12 +68,20 @@ const Products = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Link to={`/products/${product.id}`} className="mr-2">
+                    <Link to={`/products/${product._id}`} className="mr-2">
                       <Button variant="outline" size="sm">View</Button>
                     </Link>
-                    <Link to={`/products/edit/${product.id}`}>
+                    <Link to={`/products/edit/${product._id}`} className="mr-2">
                       <Button variant="outline" size="sm">Edit</Button>
                     </Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleDelete(product._id)}
+                      className="bg-red-500 text-white hover:bg-red-600"
+                    >
+                      Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

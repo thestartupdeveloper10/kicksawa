@@ -8,12 +8,14 @@ import UserDetail from './component/pages/UserDetail';
 import ProductDetail from './component/pages/ProductDetail';
 import Profile from './component/pages/Profile';
 import AddEditProduct from './component/pages/AddEditProduct';
+import AdminLogin from './component/pages/AdminLogin';
 
 const App = () => {
   return (
     <Router>
       <Layout>
         <Routes>
+        <Route path="/login" element={<AdminLogin/>} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<Users />} />
           <Route path="/users/:id" element={<UserDetail />} />
