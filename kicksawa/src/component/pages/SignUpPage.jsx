@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
 
 const SignUpPage = () => {
+  const { theme } = useTheme(); // Use the theme hook
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,20 +14,26 @@ const SignUpPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically handle the sign-up logic
     if(password === confirmPassword) {
       console.log('Sign up attempt with:', { name, email, password, confirmPassword });
-    }else{
+    } else {
       console.log('password not match')
     }
-    
   };
 
+  const inputClasses = `appearance-none rounded-none relative block w-full px-3 py-2 border ${
+    theme === 'dark' 
+      ? 'border-gray-600 bg-gray-800 text-white placeholder-gray-400' 
+      : 'border-gray-300 text-gray-900 placeholder-gray-500'
+  } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+    theme === 'dark' ? 'focus:ring-white' : 'focus:ring-black'
+  } focus:z-10 sm:text-sm transition-colors`;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} transition-colors duration-300`}>
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold">
             Create your account
           </h2>
         </div>
@@ -39,7 +47,7 @@ const SignUpPage = () => {
                 name="username"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                className={`${inputClasses} rounded-t-md`}
                 placeholder="Username"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -53,7 +61,7 @@ const SignUpPage = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                className={inputClasses}
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -66,7 +74,7 @@ const SignUpPage = () => {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                className={inputClasses}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -76,7 +84,7 @@ const SignUpPage = () => {
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                {showPassword ? <EyeOff className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} /> : <Eye className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
               </button>
             </div>
             <div className="relative">
@@ -86,7 +94,7 @@ const SignUpPage = () => {
                 name="confirm-password"
                 type={showConfirmPassword ? "text" : "password"}
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                className={`${inputClasses} rounded-b-md`}
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -96,7 +104,7 @@ const SignUpPage = () => {
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                {showConfirmPassword ? <EyeOff className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} /> : <Eye className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
               </button>
             </div>
           </div>
@@ -104,16 +112,22 @@ const SignUpPage = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md ${
+                theme === 'dark' 
+                  ? 'text-black bg-white hover:bg-gray-200' 
+                  : 'text-white bg-black hover:bg-gray-800'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                theme === 'dark' ? 'focus:ring-offset-gray-900 focus:ring-white' : 'focus:ring-black'
+              } transition-colors`}
             >
               Sign up
             </button>
           </div>
         </form>
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-black hover:text-gray-800">
+            <Link to="/login" className={`font-medium ${theme === 'dark' ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-800'}`}>
               Sign in
             </Link>
           </p>

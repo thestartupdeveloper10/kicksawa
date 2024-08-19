@@ -1,39 +1,50 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import ProductCard from "./ProductCard";
+import { useTheme } from './ThemeContext'; // Import the useTheme hook
 
 const FeaturedProductsSection = () => {
-  const products = [
-    {
-      image: "https://images.unsplash.com/photo-1516767254874-281bffac9e9a?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      category: "CATEGORY",
-      name: "CRISTIANO RONALDO CR7 R...",
-      price: 21000.00
-    },
-    {
-      image: "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      category: "CATEGORY",
-      name: "NIKE AIR JORDAN 1 RETRO LOW G...",
-      price: 21000.00
-    },
-    {
-      image: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      category: "CATEGORY",
-      name: "ADIDAS EEZAY FLIP-FLOPS 'CO...",
-      price: 21000.00
-    },
-    {
-      image: "https://images.unsplash.com/photo-1515555230216-82228b88ea98?q=80&w=1452&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      category: "CATEGORY",
-      name: "NIKE AIR JORDAN 1 MID SE 'OLYMP...",
-      price: 21000.00
-    }
-  ];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { theme } = useTheme(); // Use the theme hook
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/products?new=true');
+        const featuredProducts = response.data.slice(0, 4).map(product => ({
+          id: product._id,
+          image: product.img[0], // Assuming the first image is the main one
+          category: product.categories[0] || "CATEGORY", // Fallback to "CATEGORY" if none provided
+          name: product.title,
+          price: product.price
+        }));
+        setProducts(featuredProducts);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching featured products:', err);
+        setError('Failed to load featured products. Please try again later.');
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div className={`text-center py-12 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Loading featured products...</div>;
+  }
+
+  if (error) {
+    return <div className={`text-center py-12 text-red-500 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>{error}</div>;
+  }
 
   return (
-    <section className="py-12 px-4">
+    <section className={`py-12 px-4 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} transition-colors`}>
       <h2 className="text-2xl font-bold text-center mb-8">FEATURED</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products.map((product, index) => (
-          <ProductCard key={index} {...product} />
+          <ProductCard key={index} {...product} theme={theme} />
         ))}
       </div>
     </section>

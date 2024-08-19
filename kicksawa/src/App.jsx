@@ -9,10 +9,14 @@ import SingleProductPage from './component/pages/SingleProductPage';
 import UserProfilePage from './component/pages/UserProfilePage';
 import ContactPage from './component/pages/ContactPage';
 import BrandsPage from './component/pages/BrandsPage';
+import BrandProductsPage from './component/pages/BrandProductsPage';
+import { ThemeProvider } from './component/components/ThemeContext';
 
 function App() {
   return (
+    <ThemeProvider>
     <>
+
       <Router>
         <Routes>
           <Route path='/' element={<Home/>}></Route>
@@ -22,12 +26,14 @@ function App() {
           <Route path='/favorites' element={<FavoritesPage/>}></Route>
           <Route path='/products' element={<ProductsPage/>}></Route>
           <Route path='/products/:id' element={<SingleProductPage/>}></Route>
-          <Route path='/user' element={<UserProfilePage/>}></Route>
-          <Route path='/contact' element={<ContactPage/>}></Route>
+          <Route path='/my-account' element={<UserProfilePage/>}></Route>
+          <Route path='/contact-us' element={<ContactPage/>}></Route>
           <Route path='/brands' element={<BrandsPage/>}></Route>
+          <Route path="/products/:brandName" element={<BrandProductsPage />} />
         </Routes>
       </Router>
     </>
+    </ThemeProvider>
   )
 }
 

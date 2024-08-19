@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD0Ft_0q8zPl8F4PDFpjeg8hCpjvfCyd0Q",
+  apiKey: import.meta.env.FIREBASE_IMG_API,
   authDomain: "kicksawa.firebaseapp.com",
   databaseURL:"gs://kicksawa.appspot.com",
   projectId: "kicksawa",

@@ -67,3 +67,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+:root {
+  --background: #ffffff;
+  --text: #000000;
+}
+
+[data-theme="dark"] {
+  --background: #1a202c;
+  --text: #ffffff;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+}
