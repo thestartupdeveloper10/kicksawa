@@ -29,7 +29,7 @@ function App() {
           <Route path='/my-account' element={<UserProfilePage/>}></Route>
           <Route path='/contact-us' element={<ContactPage/>}></Route>
           <Route path='/brands' element={<BrandsPage/>}></Route>
-          <Route path="/products/:brandName" element={<BrandProductsPage />} />
+          <Route path="/brand-products" element={<BrandProductsPage />} />
         </Routes>
       </Router>
     </>

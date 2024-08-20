@@ -14,7 +14,7 @@ const ProductCard = ({ product, theme }) => (
     <div className="p-4">
       <h3 className="font-bold text-lg mb-2">{product.title}</h3>
       <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
-      <p className="font-semibold">${product.price.toFixed(2)}</p>
+      <p className="font-semibold">Ksh: {product.price.toFixed(2)}</p>
       <div className="mt-4 flex justify-between">
         <button className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}>
           <ShoppingBag size={16} className="inline mr-2" />

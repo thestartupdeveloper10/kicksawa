@@ -29,7 +29,7 @@ const BrandProductsPage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/products?category=${brandName}`);
+        const response = await axios.get(`http://localhost:3000/api/products?brand=${brandName}`);
         setProducts(response.data);
         setLoading(false);
       } catch (err) {
@@ -40,6 +40,8 @@ const BrandProductsPage = () => {
     };
     fetchProducts();
   }, [brandName]);
+
+  console.log(products)
 
   if (loading) {
     return <div className={`text-center py-8 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Loading...</div>;
