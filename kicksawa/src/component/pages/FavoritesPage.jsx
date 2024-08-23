@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
 
 const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
-  <div className={`flex items-center py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+  <div className={`flex items-center px-2 py-4 border-b ${theme === 'dark' ? 'bg-[#130d14]' : 'border-gray-200 bg-gray-200'}`}>
     <img src={item.image} alt={item.name} className="w-20 h-20 object-cover mr-4" />
     <div className="flex-grow">
       <h3 className="font-semibold">{item.name}</h3>
@@ -49,7 +49,7 @@ const FavoritesPage = () => {
   };
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
+    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl justify-center font-bold mb-8 flex items-center">

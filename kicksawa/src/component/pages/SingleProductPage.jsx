@@ -4,8 +4,10 @@ import axios from 'axios';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../components/ThemeContext';
 
 const SingleProductPage = () => {
+  const { theme } = useTheme();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -109,11 +111,13 @@ const SingleProductPage = () => {
 
             {/* Add to Cart and Wishlist Buttons */}
             <div className="flex space-x-4 mb-8">
-              <button className="flex-1 bg-black text-white py-3 px-6 flex items-center justify-center hover:bg-gray-800">
+              <button className={`flex-1 ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800 '} py-3 px-6 flex items-center justify-center `}>
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Add to Bag
               </button>
-              <button className="border border-black py-3 px-6 flex items-center justify-center hover:bg-gray-100">
+              <button className={`border py-3 px-6 flex items-center justify-center 
+              ${theme === 'dark' ? 'border-white text-white hover:bg-gray-700' : 'border-black text-black hover:bg-gray-100 '}
+            `}>
                 <Heart className="w-5 h-5" />
               </button>
             </div>

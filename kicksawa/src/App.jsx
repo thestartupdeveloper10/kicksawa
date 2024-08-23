@@ -11,6 +11,7 @@ import ContactPage from './component/pages/ContactPage';
 import BrandsPage from './component/pages/BrandsPage';
 import BrandProductsPage from './component/pages/BrandProductsPage';
 import { ThemeProvider } from './component/components/ThemeContext';
+import SearchResults from './component/pages/SearchResults';
 
 function App() {
   return (
@@ -25,11 +26,12 @@ function App() {
           <Route path='/cart' element={<CartPage/>}></Route>
           <Route path='/favorites' element={<FavoritesPage/>}></Route>
           <Route path='/products' element={<ProductsPage/>}></Route>
-          <Route path='/products/:id' element={<SingleProductPage/>}></Route>
+          <Route path='/product/:id' element={<SingleProductPage/>}></Route>
           <Route path='/my-account' element={<UserProfilePage/>}></Route>
           <Route path='/contact-us' element={<ContactPage/>}></Route>
           <Route path='/brands' element={<BrandsPage/>}></Route>
-          <Route path="/brand-products" element={<BrandProductsPage />} />
+          <Route path="/products/:brand" element={<BrandProductsPage />} />
+          <Route path="/search" element={<SearchResults/>} />
         </Routes>
       </Router>
     </>

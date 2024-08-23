@@ -13,7 +13,7 @@ const UrbanCultureSection = () => {
   };
 
   return (
-    <section className={`flex justify-center items-center py-16 px-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'} transition-colors duration-300`}>
+    <section className={`flex justify-center items-center py-16 px-4 ${theme === 'dark' ? '' : 'bg-gray-100'} transition-colors duration-300`}>
       <div className="flex flex-col md:flex-row max-w-6xl w-full shadow-2xl rounded-lg overflow-hidden">
         {/* Text content */}
         <motion.div 

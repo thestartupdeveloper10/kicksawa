@@ -40,7 +40,7 @@ const FeaturedProductsSection = () => {
   }
 
   return (
-    <section className={`py-12 px-4 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} transition-colors`}>
+    <section className={`py-12 px-4 ${theme === 'dark' ? ' text-white' : 'bg-white text-black'} transition-colors`}>
       <h2 className="text-2xl font-bold text-center mb-8">FEATURED</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products.map((product, index) => (

@@ -54,15 +54,15 @@ const UserProfilePage = () => {
     fileInputRef.current.click();
   };
 
-  const inputClasses = `border-b ${theme === 'dark' ? 'border-gray-600 bg-gray-800 text-white' : 'border-gray-300 text-black'} focus:border-black outline-none transition-colors`;
+  const inputClasses = `border-b ${theme === 'dark' ? 'border-gray-500 bg-[#130d14] text-white' : 'border-gray-300 text-black'} focus:border-black outline-none transition-colors`;
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-black'} min-h-screen transition-colors duration-300`}>
+    <div className={`${theme === 'dark' ? ' text-white' : 'bg-gray-50 text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">User Profile</h1>
         
-        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow rounded-lg p-6 mb-8`}>
+        <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} shadow rounded-lg p-6 mb-8`}>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">Personal Information</h2>
             {!editing && (
@@ -149,12 +149,12 @@ const UserProfilePage = () => {
           )}
         </div>
 
-        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow rounded-lg p-6`}>
+        <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} shadow rounded-lg p-6`}>
           <h2 className="text-2xl font-semibold mb-4">Order History</h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}>
+                <tr className={theme === 'dark' ? 'bg-[#23272a]' : 'bg-gray-100'}>
                   <th className="px-4 py-2 text-left">Order ID</th>
                   <th className="px-4 py-2 text-left">Date</th>
                   <th className="px-4 py-2 text-left">Total</th>

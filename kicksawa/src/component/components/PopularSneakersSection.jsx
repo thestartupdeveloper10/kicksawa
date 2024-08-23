@@ -12,7 +12,7 @@ const PopularSneakersSection = () => {
   useEffect(() => {
     const fetchSneakers = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/products?category=sneakers');
+        const response = await axios.get('http://localhost:3000/api/products?category=streetwear');
         const popularSneakers = response.data.slice(0, 5).map(sneaker => ({
           id: sneaker._id,
           name: sneaker.title.toUpperCase(),
@@ -39,8 +39,8 @@ const PopularSneakersSection = () => {
   }
 
   return (
-    <section className={`py-12 px-4 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} transition-colors`}>
-      <h2 className="text-2xl font-bold text-center mb-8">POPULAR SNEAKERS</h2>
+    <section className={`py-12 px-4 ${theme === 'dark' ? ' text-white' : 'bg-white text-black'} transition-colors`}>
+      <h2 className="text-2xl font-bold text-center mb-8">POPULAR PRODUCTS</h2>
       <div className="max-w-4xl mx-auto">
         {sneakers.map((sneaker, index) => (
           <SneakerItem key={sneaker.id} {...sneaker} isImageRight={index % 2 !== 0} theme={theme} />

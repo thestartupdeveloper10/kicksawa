@@ -30,7 +30,7 @@ const ContactPage = () => {
   };
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
+    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-center mb-12">Contact Us</h1>
@@ -48,7 +48,7 @@ const ContactPage = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
                 />
               </div>
               <div>
@@ -60,7 +60,7 @@ const ContactPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
                 />
               </div>
               <div>
@@ -72,7 +72,7 @@ const ContactPage = () => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
                 />
               </div>
               <div>
@@ -84,7 +84,7 @@ const ContactPage = () => {
                   onChange={handleChange}
                   required
                   rows="5"
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
                 ></textarea>
               </div>
               <button 

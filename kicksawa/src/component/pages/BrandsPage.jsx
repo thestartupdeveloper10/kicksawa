@@ -11,7 +11,7 @@ import Footer from '../components/Footer';
 import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
 
 const BrandCard = ({ brand, theme }) => (
-  <div className={`${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
+  <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
     <div className={`h-40 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center p-4`}>
       <img src={brand.logo} alt={`${brand.name} logo`} className={`max-h-full max-w-full object-contain ${theme === 'dark' ? 'filter invert' : ''}`} />
     </div>
@@ -69,7 +69,7 @@ const BrandsPage = () => {
   ];
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} min-h-screen`}>
+    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-center">Our Brands</h1>

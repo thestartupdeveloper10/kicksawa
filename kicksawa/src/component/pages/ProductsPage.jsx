@@ -4,13 +4,15 @@ import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 import axios from "axios";
 import { Link } from 'react-router-dom';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { useTheme } from '../components/ThemeContext';
 
 const ProductCard = ({ product, theme }) => (
-  <div className={`${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
-    <Link to={`/products/${product._id}`}>
-      <img src={product.img[0]} alt={product.title} className="w-full h-48 object-cover" />
-    </Link>
+  <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
+    <div className='bg-white'>
+      <Link to={`/product/${product._id}`}>
+        <img src={product.img[0]} alt={product.title} className="w-full h-48 object-contain" />
+      </Link>
+    </div>
     <div className="p-4">
       <h3 className="font-bold text-lg mb-2">{product.title}</h3>
       <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
@@ -28,14 +30,12 @@ const ProductCard = ({ product, theme }) => (
   </div>
 );
 
-const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme }) => {
-  const [isOpen, setIsOpen] = useState(true);
-
+const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme, isOpen, toggleOpen }) => {
   return (
     <div className="mb-4">
       <button
-        className={`flex justify-between items-center w-full py-2 px-4 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-black'} rounded transition-colors`}
-        onClick={() => setIsOpen(!isOpen)}
+        className={`flex justify-between items-center w-full py-2 px-4 ${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-gray-100 text-black'} rounded transition-colors`}
+        onClick={toggleOpen}
       >
         <span className="font-semibold">{title}</span>
         {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -60,7 +60,7 @@ const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme 
 };
 
 const ProductsPage = () => {
-  const { theme } = useTheme(); // Use the theme hook
+  const { theme } = useTheme();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [filters, setFilters] = useState({
@@ -70,6 +70,11 @@ const ProductsPage = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(12);
+  const [openFilters, setOpenFilters] = useState({
+    brands: false,
+    categories: false,
+    priceRanges: false
+  });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -94,7 +99,14 @@ const ProductsPage = () => {
       }
       return updatedFilters;
     });
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
+  };
+
+  const toggleFilterOpen = (filterType) => {
+    setOpenFilters(prev => ({
+      ...prev,
+      [filterType]: !prev[filterType]
+    }));
   };
 
   useEffect(() => {
@@ -134,7 +146,7 @@ const ProductsPage = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
+    <div className={`${theme === 'dark' ? 'text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">All Products</h1>
@@ -147,6 +159,8 @@ const ProductsPage = () => {
               selectedOptions={filters.brands}
               onOptionChange={(option) => handleFilterChange('brands', option)}
               theme={theme}
+              isOpen={openFilters.brands}
+              toggleOpen={() => toggleFilterOpen('brands')}
             />
             <FilterSection
               title="Categories"
@@ -154,6 +168,8 @@ const ProductsPage = () => {
               selectedOptions={filters.categories}
               onOptionChange={(option) => handleFilterChange('categories', option)}
               theme={theme}
+              isOpen={openFilters.categories}
+              toggleOpen={() => toggleFilterOpen('categories')}
             />
             <FilterSection
               title="Price Range"
@@ -161,6 +177,8 @@ const ProductsPage = () => {
               selectedOptions={filters.priceRanges}
               onOptionChange={(option) => handleFilterChange('priceRanges', option)}
               theme={theme}
+              isOpen={openFilters.priceRanges}
+              toggleOpen={() => toggleFilterOpen('priceRanges')}
             />
           </div>
           <div className="md:w-3/4">

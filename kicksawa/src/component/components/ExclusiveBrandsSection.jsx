@@ -17,7 +17,7 @@ const ExclusiveBrandsSection = () => {
   ];
 
   return (
-    <section className={`py-16 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'} transition-colors`}>
+    <section className={`py-16 ${theme === 'dark' ? '' : 'bg-white'} transition-colors`}>
       <div className="container mx-auto px-4">
         <h2 className={`text-2xl font-bold text-center mb-12 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
           EXCLUSIVE BRANDS

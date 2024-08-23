@@ -51,7 +51,7 @@ const CartPage = () => {
   const total = subtotal + tax;
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} min-h-screen`}>
+    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
@@ -71,7 +71,7 @@ const CartPage = () => {
               ))}
             </div>
             <div className="md:w-1/3">
-              <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'} p-6 rounded-lg`}>
+              <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-gray-100'} p-6 rounded-lg`}>
                 <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                 <div className="flex justify-between mb-2">
                   <span>Subtotal</span>

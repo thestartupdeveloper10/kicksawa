@@ -7,7 +7,7 @@ const Footer = () => {
   const { theme } = useTheme(); // Use the theme hook
 
   return (
-    <footer className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'} pt-12 pb-4 transition-colors`}>
+    <footer className={`${theme === 'dark' ? 'bg-[#041922] text-white' : 'bg-[#f9f6ee] text-black'} pt-12 pb-4 transition-colors`}>
       <div className="container mx-auto px-4">
         {/* Top section with logo and features */}
         <div className="flex flex-wrap justify-between items-center mb-8">

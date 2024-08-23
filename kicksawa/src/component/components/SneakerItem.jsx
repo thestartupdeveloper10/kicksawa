@@ -6,13 +6,13 @@ const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => (
   <div className={`flex flex-col md:flex-row items-center mb-12 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
     {!isImageRight && (
       <div className="w-full md:w-1/3 mb-4 md:mb-0">
-        <Link to={`/products/${id}`}>
+        <Link to={`/product/${id}`}>
           <img src={image} alt={name} className="w-full h-auto object-contain" />
         </Link>
       </div>
     )}
     <div className="w-full md:w-2/3 md:px-6">
-      <Link to={`/products/${id}`}>
+      <Link to={`/product/${id}`}>
         <h3 className="text-2xl font-bold mb-2">{name}</h3>
       </Link>
       <p className="text-sm mb-4">{description}</p>
@@ -29,7 +29,7 @@ const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => (
     </div>
     {isImageRight && (
       <div className="w-full md:w-1/3 mt-4 md:mt-0">
-        <Link to={`/products/${id}`}>
+        <Link to={`/product/${id}`}>
           <img src={image} alt={name} className="w-full h-auto object-contain" />
         </Link>
       </div>

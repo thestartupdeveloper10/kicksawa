@@ -30,8 +30,8 @@ const SignUpPage = () => {
   } focus:z-10 sm:text-sm transition-colors`;
 
   return (
-    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} transition-colors duration-300`}>
-      <div className="max-w-md w-full space-y-8">
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? ' text-white' : 'bg-gray-50 text-gray-900'} transition-colors duration-300`}>
+      <div className={`max-w-md w-full space-y-8 px-5 py-5 ${theme === 'dark' ? 'bg-[#130d14]' : 'bg-gray-50'}`}>
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold">
             Create your account

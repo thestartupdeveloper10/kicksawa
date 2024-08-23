@@ -16,8 +16,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
-      <div className="max-w-md w-full space-y-8">
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? '' : 'bg-gray-50'} transition-colors duration-300`}>
+      <div className={`max-w-md w-full space-y-8 px-5 py-5 ${theme === 'dark' ? 'bg-[#130d14]' : 'bg-gray-50'}`}>
         <div>
           <h2 className={`mt-6 text-center text-3xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Sign in to your account

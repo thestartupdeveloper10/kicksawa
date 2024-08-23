@@ -65,8 +65,11 @@ productRouter.get("/", async (req, res) => {
   const qNew = req.query.new;
   const qCategory = req.query.category;
   const qBrand = req.query.brand;
+  const qSearch = req.query.search;
+
   try {
     let products;
+
     if (qNew) {
       products = await Product.find().sort({ createdAt: -1 }).limit(5);
     } else if (qCategory) {
@@ -77,9 +80,18 @@ productRouter.get("/", async (req, res) => {
       });
     } else if (qBrand) {
       products = await Product.find({ brand: qBrand });
+    } else if (qSearch) {
+      products = await Product.find({
+        $or: [
+          { title: { $regex: qSearch, $options: 'i' } },
+          { brand: { $regex: qSearch, $options: 'i' } },
+          { categories: { $in: [new RegExp(qSearch, 'i')] } }
+        ]
+      });
     } else {
       products = await Product.find();
     }
+
     res.status(200).json(products);
   } catch (err) {
     res.status(500).json(err);
