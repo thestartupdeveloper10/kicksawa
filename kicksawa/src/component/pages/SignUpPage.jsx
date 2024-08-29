@@ -1,23 +1,46 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from '../components/ThemeContext';
+import { publicRequest } from '../../service/requestMethods';
 
 const SignUpPage = () => {
-  const { theme } = useTheme(); // Use the theme hook
+  const { theme } = useTheme();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if(password === confirmPassword) {
-      console.log('Sign up attempt with:', { name, email, password, confirmPassword });
-    } else {
-      console.log('password not match')
+    setError('');
+    setIsLoading(true);
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await publicRequest.post('/auth/register', {
+        username: name,
+        email,
+        password
+      });
+
+      console.log('User registered successfully:', response.data);
+      navigate('/login');
+    } catch (err) {
+      setError(err.response?.data?.error || 'An error occurred during registration');
+      console.error('Registration error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -109,18 +132,25 @@ const SignUpPage = () => {
             </div>
           </div>
 
+          {error && (
+            <div className="text-red-500 text-center mt-2">
+              {error}
+            </div>
+          )}
+
           <div>
             <button
               type="submit"
+              disabled={isLoading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md ${
                 theme === 'dark' 
                   ? 'text-black bg-white hover:bg-gray-200' 
                   : 'text-white bg-black hover:bg-gray-800'
               } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 theme === 'dark' ? 'focus:ring-offset-gray-900 focus:ring-white' : 'focus:ring-black'
-              } transition-colors`}
+              } transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Sign up
+              {isLoading ? 'Signing up...' : 'Sign up'}
             </button>
           </div>
         </form>

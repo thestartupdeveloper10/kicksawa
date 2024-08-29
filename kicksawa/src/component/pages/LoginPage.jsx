@@ -1,18 +1,37 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from '../components/ThemeContext';
+import { useDispatch } from 'react-redux';
+import { loginStart, loginSuccess, loginFailure } from '../../redux/userRedux';
+import { publicRequest } from '../../service/requestMethods';
 
 const LoginPage = () => {
-  const { theme } = useTheme(); // Use the theme hook
+  const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically handle the login logic
-    console.log('Login attempt with:', { email, password });
+    setError('');
+    setIsLoading(true);
+    dispatch(loginStart());
+
+    try {
+      const response = await publicRequest.post('/auth/login', { email, password });
+      dispatch(loginSuccess(response.data));
+      navigate('/'); // Redirect to home page or dashboard
+    } catch (err) {
+      dispatch(loginFailure());
+      setError(err.response?.data?.error || 'Invalid email or password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -77,18 +96,25 @@ const LoginPage = () => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className={`font-medium ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-black hover:text-gray-800'}`}>
+              <Link to="/forgot-password" className={`font-medium ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-black hover:text-gray-800'}`}>
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
+
+          {error && (
+            <div className="text-red-500 text-center mt-2">
+              {error}
+            </div>
+          )}
 
           <div>
             <button
               type="submit"
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md ${theme === 'dark' ? 'text-black bg-white hover:bg-gray-200' : 'text-white bg-black hover:bg-gray-800'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black`}
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md ${theme === 'dark' ? 'text-black bg-white hover:bg-gray-200' : 'text-white bg-black hover:bg-gray-800'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Sign in
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>

@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Heart, ShoppingBag, X } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { useTheme } from '../components/ThemeContext';
+import { removeProductWishlist } from '../../redux/wishlistRedux';
+import { addProduct } from '../../redux/cartRedux';
 
 const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
   <div className={`flex items-center px-2 py-4 border-b ${theme === 'dark' ? 'bg-[#130d14]' : 'border-gray-200 bg-gray-200'}`}>
-    <img src={item.image} alt={item.name} className="w-20 h-20 object-cover mr-4" />
+    <img src={item.product.img[0]} alt={item.product.title} className="w-20 h-20 object-cover mr-4" />
     <div className="flex-grow">
-      <h3 className="font-semibold">{item.name}</h3>
-      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{item.category}</p>
-      <p className="font-bold">${item.price.toFixed(2)}</p>
+      <h3 className="font-semibold">{item.product.title}</h3>
+      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{item.product.brand}</p>
+      <p className="font-bold">${item.product.price.toFixed(2)}</p>
     </div>
     <div className="flex items-center space-x-2">
       <button
@@ -20,7 +24,7 @@ const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
         <ShoppingBag size={20} />
       </button>
       <button
-        onClick={() => onRemove(item.id)}
+        onClick={() => onRemove(item._id)}
         className="p-2 text-red-500 hover:text-red-700"
       >
         <X size={20} />
@@ -30,22 +34,32 @@ const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
 );
 
 const FavoritesPage = () => {
-  const { theme } = useTheme(); // Use the theme hook
-  const [favorites, setFavorites] = useState([
-    { id: 1, name: "Nike Air Max 90", category: "Sneakers", price: 120, image: "/path-to-image1.jpg" },
-    { id: 2, name: "Adidas Originals Hoodie", category: "Apparel", price: 80, image: "/path-to-image2.jpg" },
-    { id: 3, name: "Puma RS-X", category: "Sneakers", price: 110, image: "/path-to-image3.jpg" },
-  ]);
+  const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const user = useSelector(state => state.user.currentUser);
+  const wishlist = useSelector(state => state.wishlist);
 
-  const removeFromFavorites = (id) => {
-    setFavorites(favorites.filter(item => item.id !== id));
+  console.log('FavoritesPage - User:', user);
+  console.log('FavoritesPage - Wishlist:', wishlist);
+
+  const userId = user?._id;
+  const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  const favorites = userWishlist.products;
+
+  console.log('FavoritesPage - User Wishlist:', userWishlist);
+  console.log('FavoritesPage - Favorites:', favorites);
+
+  const removeFromFavorites = (productId) => {
+    console.log('Removing from favorites:', productId);
+    dispatch(removeProductWishlist({ userId, productId }));
   };
 
   const addToCart = (item) => {
-    // This function would typically interact with your cart state or API
-    console.log(`Added ${item.name} to cart`);
+    console.log('Adding to cart:', item);
+    dispatch(addProduct({ userId, product: { ...item, quantity: 1 } }));
     // Optionally, you could remove the item from favorites after adding to cart
-    // removeFromFavorites(item.id);
+    removeFromFavorites(item._id);
+    console.log('item id',item._id)
   };
 
   return (
@@ -61,23 +75,24 @@ const FavoritesPage = () => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {favorites.map(item => (
               <FavoriteItem
-                key={item.id}
+                key={item._id}
                 item={item}
                 onRemove={removeFromFavorites}
                 onAddToCart={addToCart}
                 theme={theme}
               />
+              // console.log("items are:",item.product.img[0])
             ))}
           </div>
         )}
         {favorites.length > 0 && (
           <div className="mt-8 text-center">
-            <button
+            <Link
+              to="/products"
               className={`px-6 py-3 rounded ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
-              onClick={() => console.log("Navigate to shop")}
             >
               Continue Shopping
-            </button>
+            </Link>
           </div>
         )}
       </div>

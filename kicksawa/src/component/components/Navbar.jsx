@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon } from 'lucide-react';
+import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../../redux/userRedux';
 import axios from 'axios';
 
 const MenuItem = ({ href, children, onClick }) => {
@@ -21,10 +23,30 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector(state => state.user.currentUser);
+  const cart = useSelector(state => state.cart);
+  const wishlist = useSelector(state => state.wishlist);
+
+  console.log('Navbar - User:', user);
+  console.log('Navbar - Cart:', cart);
+  console.log('Navbar - Wishlist:', wishlist);
+
+  const userId = user?._id;
+  const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
+  const userWishlist = wishlist.wishlists[userId] || { products: [] };
+
+  const cartItemCount = Object.values(userCart.products).reduce((total, item) => total + item.quantity, 0);
+  const wishlistItemCount = userWishlist.products.length;
+
+  console.log('Navbar - Cart Item Count:', cartItemCount);
+  console.log('Navbar - Wishlist Item Count:', wishlistItemCount);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);
   const menuItems = ['SHOP', 'BRANDS', 'CONTACT'];
 
   const handleSearchSubmit = async (e) => {
@@ -37,9 +59,14 @@ const Navbar = () => {
         setSearchQuery('');
       } catch (error) {
         console.error('Error performing search:', error);
-        // You might want to show an error message to the user here
       }
     }
+  };
+
+  const handleLogout = () => {
+    console.log('Logging out user');
+    dispatch(logout());
+    navigate('/');
   };
 
   return (
@@ -50,14 +77,14 @@ const Navbar = () => {
           <Link to='/' className="flex-shrink-0 mr-4">
             <h1 className="text-xl md:text-2xl font-bold italic">LABELsafi.</h1>
           </Link>
-          
+
           {/* Navigation links (desktop) */}
           <nav className="hidden md:flex space-x-4 lg:space-x-8">
             {menuItems.map((item) => (
               <MenuItem key={item} href={item.toLowerCase() === 'shop' ? '/products' : `/${item.toLowerCase()}`}>{item}</MenuItem>
             ))}
           </nav>
-          
+
           {/* Icons and Search */}
           <div className="flex items-center space-x-2 md:space-x-4">
             {isSearchOpen ? (
@@ -78,14 +105,50 @@ const Navbar = () => {
                 <Search className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             )}
-            <Link to='/favorites' className="p-1">
+            <Link to='/favorites' className="p-1 relative">
               <Heart className="w-5 h-5 md:w-6 md:h-6" />
+              {wishlistItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {wishlistItemCount}
+                </span>
+              )}
             </Link>
-            <Link to="/login" className="p-1">
-              <User className="w-5 h-5 md:w-6 md:h-6" />
-            </Link>
-            <Link to='/cart' className="p-1">
+            <div className="relative">
+              <button onClick={toggleUserMenu} className="p-1">
+                <User className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+              {isUserMenuOpen && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} ring-1 ring-black ring-opacity-5`}>
+                  {user ? (
+                    <>
+                      <p className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                        Hello, {user.username}
+                      </p>
+                      <Link to="/my-account" className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className={`block w-full text-left px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <Link to="/login" className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
+                      Login
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+            <Link to='/cart' className="p-1 relative">
               <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
             <button onClick={toggleTheme} className="p-1">
               {theme === 'dark' ? <Sun className="w-5 h-5 md:w-6 md:h-6" /> : <Moon className="w-5 h-5 md:w-6 md:h-6" />}
@@ -98,7 +161,7 @@ const Navbar = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Mobile menu */}
       {isMenuOpen && (
         <nav className={`md:hidden ${theme === 'dark' ? 'bg-[#041922]' : 'bg-[#f9f6ee]'} transition-colors`}>
@@ -108,6 +171,24 @@ const Navbar = () => {
                 <MenuItem href={item.toLowerCase() === 'shop' ? '/products' : `/${item.toLowerCase()}`} onClick={toggleMenu}>{item}</MenuItem>
               </li>
             ))}
+            {user && (
+              <>
+                <li>
+                  <MenuItem href="/my-account" onClick={toggleMenu}>Profile</MenuItem>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      toggleMenu();
+                    }}
+                    className={`${theme === 'dark' ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-600'} transition-colors text-sm md:text-base`}
+                  >
+                    Logout
+                  </button>
+                </li>
+              </>
+            )}
           </ul>
         </nav>
       )}

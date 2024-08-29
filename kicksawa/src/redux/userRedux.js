@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   currentUser: null,
-  userId: null, // Added userId to store the current user's identifier
+  userId: null,
   isFetching: false,
   error: false,
 };
@@ -18,7 +18,7 @@ const userSlice = createSlice({
     loginSuccess: (state, action) => {
       state.isFetching = false;
       state.currentUser = action.payload;
-      state.userId = action.payload.id; // Assuming userId is part of the login payload
+      state.userId = action.payload.id;
     },
     loginFailure: (state) => {
       state.isFetching = false;
@@ -37,11 +37,14 @@ const userSlice = createSlice({
     registerSuccess: (state, action) => {
       state.isFetching = false;
       state.currentUser = action.payload;
-      state.userId = action.payload.id; // Assuming userId is part of the registration payload
+      state.userId = action.payload.id;
     },
     registerFailure: (state) => {
       state.isFetching = false;
       state.error = true;
+    },
+    updateUser: (state, action) => {
+      state.currentUser = action.payload;
     },
   },
 });
@@ -55,6 +58,7 @@ export const {
   registerSuccess,
   registerFailure,
   resetError,
+  updateUser,
 } = userSlice.actions;
 
 export const selectCurrentUser = (state) => state.user.currentUser;

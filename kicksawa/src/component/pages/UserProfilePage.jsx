@@ -1,37 +1,47 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Edit2, Eye, EyeOff, Camera } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { useTheme } from '../components/ThemeContext';
+import { userRequest } from '../../service/requestMethods';
+import { updateUser } from '../../redux/userRedux'; // Assume this action exists
 
 const UserProfilePage = () => {
-  const { theme } = useTheme(); // Use the theme hook
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    phone: '+1 234 567 8900',
-    address: '123 Main St, Anytown, AN 12345',
-    password: '********',
-    profileImage: null
-  });
-
+  const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.user.currentUser);
+  const [user, setUser] = useState(currentUser);
   const [editing, setEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null);
+  const [orders, setOrders] = useState([]);
 
-  const [orders, setOrders] = useState([
-    { id: '1001', date: '2023-07-15', total: 120.50, status: 'Delivered' },
-    { id: '1002', date: '2023-08-02', total: 85.75, status: 'Shipped' },
-    { id: '1003', date: '2023-08-10', total: 200.00, status: 'Processing' },
-  ]);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await userRequest.get('/orders');
+        setOrders(response.data);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const handleEdit = () => {
     setEditing(true);
   };
 
-  const handleSave = () => {
-    setEditing(false);
-    console.log('Saving user data:', user);
+  const handleSave = async () => {
+    try {
+      const response = await userRequest.put(`/users/${user._id}`, user);
+      dispatch(updateUser(response.data));
+      setEditing(false);
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
   };
 
   const handleChange = (e) => {
@@ -39,14 +49,17 @@ const UserProfilePage = () => {
     setUser(prevUser => ({ ...prevUser, [name]: value }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUser(prevUser => ({ ...prevUser, profileImage: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('image', file);
+      try {
+        const response = await userRequest.post('/upload', formData);
+        setUser(prevUser => ({ ...prevUser, profileImage: response.data.imageUrl }));
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
     }
   };
 
@@ -102,42 +115,22 @@ const UserProfilePage = () => {
 
           <div className="space-y-4">
             {/* User information fields */}
-            {['name', 'email', 'phone', 'address', 'password'].map((field) => (
+            {['username', 'email', 'phone', 'address'].map((field) => (
               <div key={field} className="flex items-center">
-                {field === 'name' && <User className="mr-2" size={20} />}
+                {field === 'username' && <User className="mr-2" size={20} />}
                 {field === 'email' && <Mail className="mr-2" size={20} />}
                 {field === 'phone' && <Phone className="mr-2" size={20} />}
                 {field === 'address' && <MapPin className="mr-2" size={20} />}
-                {field === 'password' && <Eye className="mr-2" size={20} />}
                 {editing ? (
-                  field === 'password' ? (
-                    <div className="relative w-full">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name={field}
-                        value={user[field]}
-                        onChange={handleChange}
-                        className={inputClasses}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type={field === 'email' ? 'email' : 'text'}
-                      name={field}
-                      value={user[field]}
-                      onChange={handleChange}
-                      className={inputClasses}
-                    />
-                  )
+                  <input
+                    type={field === 'email' ? 'email' : 'text'}
+                    name={field}
+                    value={user[field] || ''}
+                    onChange={handleChange}
+                    className={inputClasses}
+                  />
                 ) : (
-                  <span>{user[field]}</span>
+                  <span>{user[field] || 'Not provided'}</span>
                 )}
               </div>
             ))}
@@ -163,9 +156,9 @@ const UserProfilePage = () => {
               </thead>
               <tbody>
                 {orders.map(order => (
-                  <tr key={order.id} className={theme === 'dark' ? 'border-b border-gray-700' : 'border-b'}>
-                    <td className="px-4 py-2">{order.id}</td>
-                    <td className="px-4 py-2">{order.date}</td>
+                  <tr key={order._id} className={theme === 'dark' ? 'border-b border-gray-700' : 'border-b'}>
+                    <td className="px-4 py-2">{order._id}</td>
+                    <td className="px-4 py-2">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-2">${order.total.toFixed(2)}</td>
                     <td className="px-4 py-2">{order.status}</td>
                   </tr>

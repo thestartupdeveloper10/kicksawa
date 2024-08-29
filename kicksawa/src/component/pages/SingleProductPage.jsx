@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../components/ThemeContext';
+import { addProduct } from '../../redux/cartRedux';
+import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
 const SingleProductPage = () => {
   const { theme } = useTheme();
   const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector(state => state.user.currentUser);
+  const cart = useSelector(state => state.cart);
+  const wishlist = useSelector(state => state.wishlist);
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,6 +41,40 @@ const SingleProductPage = () => {
     fetchProduct();
   }, [id]);
 
+  const isInWishlist = user && wishlist.wishlists[user._id]?.products.some(item => item._id === id);
+
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (!selectedSize || !selectedColor) {
+      alert('Please select a size and color');
+      return;
+    }
+    dispatch(addProduct({
+      userId: user._id,
+      product: {
+        ...product,
+        quantity,
+        selectedSize,
+        selectedColor
+      }
+    }));
+  };
+
+  const handleToggleWishlist = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (isInWishlist) {
+      dispatch(removeProductWishlist({ userId: user._id, productId: id }));
+    } else {
+      dispatch(addProductWishlist({ userId: user._id, product }));
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
   }
@@ -45,8 +88,8 @@ const SingleProductPage = () => {
   }
 
   return (
-    <div>
-      <Navbar/>
+    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row -mx-4">
           {/* Product Images */}
@@ -60,11 +103,11 @@ const SingleProductPage = () => {
 
           {/* Product Details */}
           <div className="md:w-1/2 px-4">
-            <h1 className="text-3xl font-bold mb-4">{product.title}</h1>
+            <h1 className="text-3xl font-bold mb-4 capitalize">{product.title}</h1>
             <p className="text-2xl font-semibold mb-6">Ksh: {product.price.toFixed(2)}</p>
-            
+
             <p className="mb-6">{product.desc}</p>
-            
+
             {/* Size Selection */}
             <div className="mb-6">
               <label className="block mb-2 font-semibold">Select Size</label>
@@ -72,7 +115,7 @@ const SingleProductPage = () => {
                 {product.size.map((size) => (
                   <button
                     key={size}
-                    className={`m-2 px-4 py-2 border ${selectedSize === size ? 'border-black bg-black text-white' : 'border-gray-300'} hover:border-black`}
+                    className={`m-2 px-4 py-2 border ${selectedSize === size ? (theme === 'dark' ? 'border-white bg-white text-black' : 'border-black bg-black text-white') : 'border-gray-300'} hover:border-black`}
                     onClick={() => setSelectedSize(size)}
                   >
                     {size}
@@ -103,22 +146,29 @@ const SingleProductPage = () => {
             <div className="mb-6">
               <label className="block mb-2 font-semibold">Quantity</label>
               <div className="flex items-center border border-gray-300">
-                <button className="px-4 py-2 bg-gray-400" onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
+                <button className={`px-4 py-2 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`} onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
                 <span className="px-4 py-2">{quantity}</span>
-                <button className="px-4 py-2 bg-gray-400" onClick={() => setQuantity(quantity + 1)}>+</button>
+                <button className={`px-4 py-2 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`} onClick={() => setQuantity(quantity + 1)}>+</button>
               </div>
             </div>
 
             {/* Add to Cart and Wishlist Buttons */}
             <div className="flex space-x-4 mb-8">
-              <button className={`flex-1 ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800 '} py-3 px-6 flex items-center justify-center `}>
+              <button 
+                onClick={handleAddToCart}
+                className={`flex-1 ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} py-3 px-6 flex items-center justify-center`}
+              >
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Add to Bag
               </button>
-              <button className={`border py-3 px-6 flex items-center justify-center 
-              ${theme === 'dark' ? 'border-white text-white hover:bg-gray-700' : 'border-black text-black hover:bg-gray-100 '}
-            `}>
-                <Heart className="w-5 h-5" />
+              <button 
+                onClick={handleToggleWishlist}
+                className={`border py-3 px-6 flex items-center justify-center 
+                ${theme === 'dark' ? 'border-white text-white hover:bg-gray-700' : 'border-black text-black hover:bg-gray-100'}
+                ${isInWishlist ? 'bg-red-500 border-red-500 text-white' : ''}
+              `}
+              >
+                <Heart className="w-5 h-5" fill={isInWishlist ? 'currentColor' : 'none'} />
               </button>
             </div>
 
@@ -127,7 +177,7 @@ const SingleProductPage = () => {
               <h2 className="text-xl font-semibold mb-2">Categories</h2>
               <div className="flex flex-wrap">
                 {product.categories.map((category, index) => (
-                  <span key={index} className="mr-2 mb-2 px-3 py-1 bg-gray-400 rounded-full text-sm">
+                  <span key={index} className={`mr-2 mb-2 px-3 py-1 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} rounded-full text-sm`}>
                     {category}
                   </span>
                 ))}
@@ -143,7 +193,7 @@ const SingleProductPage = () => {
           </div>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 };

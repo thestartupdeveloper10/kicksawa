@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Heart, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 import axios from "axios";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../components/ThemeContext';
+import { addProduct } from '../../redux/cartRedux';
+import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
-const ProductCard = ({ product, theme }) => (
+const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isFavorite }) => (
   <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
     <div className='bg-white'>
       <Link to={`/product/${product._id}`}>
@@ -14,16 +17,22 @@ const ProductCard = ({ product, theme }) => (
       </Link>
     </div>
     <div className="p-4">
-      <h3 className="font-bold text-lg mb-2">{product.title}</h3>
+      <h3 className="font-bold text-lg mb-2 capitalize">{product.title}</h3>
       <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
       <p className="font-semibold">Ksh: {product.price.toFixed(2)}</p>
       <div className="mt-4 flex justify-between">
-        <button className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}>
+        <button 
+          onClick={() => onAddToCart(product)}
+          className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}
+        >
           <ShoppingBag size={16} className="inline mr-2" />
           Add to Cart
         </button>
-        <button className={`${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} px-4 py-2 rounded transition-colors`}>
-          <Heart size={16} />
+        <button 
+          onClick={() => onToggleFavorite(product)}
+          className={`${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} px-4 py-2 rounded transition-colors`}
+        >
+          <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
         </button>
       </div>
     </div>
@@ -61,6 +70,12 @@ const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme,
 
 const ProductsPage = () => {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector(state => state.user.currentUser);
+  const userId = user?._id;
+  const cart = useSelector(state => state.cart);
+  const wishlist = useSelector(state => state.wishlist);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [filters, setFilters] = useState({
@@ -88,6 +103,30 @@ const ProductsPage = () => {
     };
     fetchProducts();
   }, []);
+
+  const handleAddToCart = (product) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    console.log('Adding to cart:', { userId, product });
+    dispatch(addProduct({ userId, product }));
+  };
+
+  const handleToggleFavorite = (product) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const userWishlist = wishlist.wishlists[userId] || { products: [] };
+    const isProductInWishlist = userWishlist.products.some(item => item._id === product._id);
+    console.log('Toggling favorite:', { userId, product, isProductInWishlist });
+    if (isProductInWishlist) {
+      dispatch(removeProductWishlist({ userId, productId: product._id }));
+    } else {
+      dispatch(addProductWishlist({ userId, product }));
+    }
+  };
 
   const handleFilterChange = (filterType, option) => {
     setFilters(prevFilters => {
@@ -145,6 +184,10 @@ const ProductsPage = () => {
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  console.log('ProductsPage - User:', user);
+  console.log('ProductsPage - Cart:', cart);
+  console.log('ProductsPage - Wishlist:', wishlist);
+
   return (
     <div className={`${theme === 'dark' ? 'text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
@@ -184,7 +227,14 @@ const ProductsPage = () => {
           <div className="md:w-3/4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentProducts.map(product => (
-                <ProductCard key={product._id} product={product} theme={theme} />
+                <ProductCard 
+                  key={product._id} 
+                  product={product} 
+                  theme={theme}
+                  onAddToCart={handleAddToCart}
+                  onToggleFavorite={handleToggleFavorite}
+                  isFavorite={wishlist.wishlists[userId]?.products.some(item => item._id === product._id)}
+                />
               ))}
             </div>
             {filteredProducts.length === 0 && (
