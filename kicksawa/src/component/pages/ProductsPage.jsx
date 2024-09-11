@@ -185,10 +185,6 @@ const ProductsPage = () => {
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  console.log('ProductsPage - User:', user);
-  console.log('ProductsPage - Cart:', cart);
-  console.log('ProductsPage - Wishlist:', wishlist);
-
   return (
     <div className={`${theme === 'dark' ? 'text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />

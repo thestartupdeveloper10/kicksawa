@@ -8,6 +8,8 @@ import Navbar from '../components/Navbar';
 import { useTheme } from '../components/ThemeContext';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
+import { grid } from 'ldrs';
+grid.register()
 
 const SingleProductPage = () => {
   const { theme } = useTheme();
@@ -78,7 +80,13 @@ const SingleProductPage = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">
+          <div className="relative">
+        <div className="h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-200"></div>
+        <div className="absolute top-0 left-0 h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-500 animate-spin">
+        </div>
+    </div>
+</div>
   }
 
   if (error) {

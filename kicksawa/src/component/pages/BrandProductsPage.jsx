@@ -191,7 +191,13 @@ const BrandProductsPage = () => {
   };
 
   if (loading) {
-    return <div className={`text-center py-8 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">
+          <div className="relative">
+        <div className="h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-200"></div>
+        <div className="absolute top-0 left-0 h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-500 animate-spin">
+        </div>
+    </div>
+</div>
   }
   if (error) {
     return <div className={`text-center py-8 text-red-500 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>{error}</div>;

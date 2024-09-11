@@ -31,9 +31,7 @@ const Navbar = () => {
   const cart = useSelector(state => state.cart);
   const wishlist = useSelector(state => state.wishlist);
 
-  console.log('Navbar - User:', user);
-  console.log('Navbar - Cart:', cart);
-  console.log('Navbar - Wishlist:', wishlist);
+ 
 
   const userId = user?.id;
   const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
@@ -42,7 +40,7 @@ const Navbar = () => {
   const cartItemCount = Object.values(userCart.products).length
   const wishlistItemCount = userWishlist.products.length;
 
-  console.log('Navbar - Cart Item Count:', cartItemCount);
+ 
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);
@@ -121,7 +119,7 @@ const Navbar = () => {
                   {user ? (
                     <>
                       <p className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
-                        Hello, {user.username}
+                        Hello, {user.email}
                       </p>
                       <Link to="/my-account" className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
                         Profile
