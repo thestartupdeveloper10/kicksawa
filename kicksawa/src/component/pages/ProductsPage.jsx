@@ -21,13 +21,14 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isFavorite
       <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
       <p className="font-semibold">Ksh: {product.price.toFixed(2)}</p>
       <div className="mt-4 flex justify-between">
-        <button 
-          onClick={() => onAddToCart(product)}
+      <Link to={`/product/${product._id}`}>
+        <button
           className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}
         >
           <ShoppingBag size={16} className="inline mr-2" />
           Add to Cart
         </button>
+        </Link>
         <button 
           onClick={() => onToggleFavorite(product)}
           className={`${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} px-4 py-2 rounded transition-colors`}
@@ -73,7 +74,7 @@ const ProductsPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(state => state.user.currentUser);
-  const userId = user?._id;
+  const userId = user?.id;
   const cart = useSelector(state => state.cart);
   const wishlist = useSelector(state => state.wishlist);
   const [products, setProducts] = useState([]);

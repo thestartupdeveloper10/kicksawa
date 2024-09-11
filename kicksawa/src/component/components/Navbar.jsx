@@ -35,15 +35,14 @@ const Navbar = () => {
   console.log('Navbar - Cart:', cart);
   console.log('Navbar - Wishlist:', wishlist);
 
-  const userId = user?._id;
+  const userId = user?.id;
   const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
 
-  const cartItemCount = Object.values(userCart.products).reduce((total, item) => total + item.quantity, 0);
+  const cartItemCount = Object.values(userCart.products).length
   const wishlistItemCount = userWishlist.products.length;
 
   console.log('Navbar - Cart Item Count:', cartItemCount);
-  console.log('Navbar - Wishlist Item Count:', wishlistItemCount);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,7 +9,7 @@ const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => {
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
 
-  const userId = user?._id;
+  const userId = user?.id;
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
   const isInWishlist = userWishlist.products.some(item => item._id === id);
 
@@ -69,13 +68,14 @@ const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => {
             <Heart className={`w-4 h-4 mr-2 ${isInWishlist ? 'fill-current' : ''}`} />
             {isInWishlist ? 'REMOVE FROM WISHLIST' : 'ADD TO WISHLIST'}
           </button>
-          <button 
-            onClick={handleAddToBag}
+          <Link to={`/product/${id}`}>
+          <button
             className={`flex items-center justify-center border ${theme === 'dark' ? 'border-white hover:bg-white hover:text-black' : 'border-black hover:bg-black hover:text-white'} px-4 py-2 transition-colors`}
           >
             <ShoppingBag className="w-4 h-4 mr-2" />
             ADD TO BAG
           </button>
+          </Link>
         </div>
       </div>
       {isImageRight && (

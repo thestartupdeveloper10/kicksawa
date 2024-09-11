@@ -12,16 +12,13 @@ const cartSlice = createSlice({
         state.carts[userId] = { products: {}, quantity: 0, total: 0 };
       }
       const userCart = state.carts[userId];
-      
       if (userCart.products[product._id]) {
-        userCart.products[product._id].quantity += 1;
+        userCart.products[product._id].quantity += product.quantity;
       } else {
-        userCart.products[product._id] = { ...product, quantity: 1 };
+        userCart.products[product._id] = { ...product };
       }
-      
-      userCart.quantity += 1;
-      userCart.total += product.price;
-      
+      userCart.quantity += product.quantity;
+      userCart.total += product.price * product.quantity;
       console.log('Updated cart state:', state);
     },
     updateProductQuantity: (state, action) => {

@@ -168,7 +168,7 @@ const BrandProductsPage = () => {
       console.log('User not logged in');
       return;
     }
-    const userId = user._id;
+    const userId = user.id;
     const userWishlist = wishlist.wishlists[userId] || { products: [] };
     const isInWishlist = userWishlist.products.some(item => item._id === product._id);
     if (isInWishlist) {

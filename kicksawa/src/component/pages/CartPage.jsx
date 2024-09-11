@@ -52,7 +52,8 @@ const CartPage = () => {
 
   console.log('CartPage - Cart state:', cart);
 
-  const userId = user ? user._id : 'undefined';
+  const userId = user ? user.id : 'undefined';
+  console.log('the user is:',userId )
   const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
   const cartItems = Object.values(userCart.products);
 
@@ -115,15 +116,15 @@ const CartPage = () => {
                 <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                 <div className="flex justify-between mb-2">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>Ksh: {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Ksh: {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t border-gray-300">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>Ksh: {total.toFixed(2)}</span>
                 </div>
                 <button 
                   onClick={handleCheckout}

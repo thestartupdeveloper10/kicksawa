@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, ShoppingBag, X } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -9,6 +8,7 @@ import { removeProductWishlist } from '../../redux/wishlistRedux';
 import { addProduct } from '../../redux/cartRedux';
 
 const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
+  
   <div className={`flex items-center px-2 py-4 border-b ${theme === 'dark' ? 'bg-[#130d14]' : 'border-gray-200 bg-gray-200'}`}>
     <img src={item.product.img[0]} alt={item.product.title} className="w-20 h-20 object-cover mr-4" />
     <div className="flex-grow">
@@ -24,7 +24,7 @@ const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
         <ShoppingBag size={20} />
       </button>
       <button
-        onClick={() => onRemove(item._id)}
+        onClick={() => onRemove(item.product._id)}
         className="p-2 text-red-500 hover:text-red-700"
       >
         <X size={20} />
@@ -42,8 +42,10 @@ const FavoritesPage = () => {
   console.log('FavoritesPage - User:', user);
   console.log('FavoritesPage - Wishlist:', wishlist);
 
-  const userId = user?._id;
+  const userId = user?.id;
+  console.log('the id is: ',userId)
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  console.log(userWishlist)
   const favorites = userWishlist.products;
 
   console.log('FavoritesPage - User Wishlist:', userWishlist);
@@ -74,6 +76,7 @@ const FavoritesPage = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {favorites.map(item => (
+             
               <FavoriteItem
                 key={item._id}
                 item={item}

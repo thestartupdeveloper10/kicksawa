@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ProductCard from "./ProductCard";
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
+import { color } from 'framer-motion';
 
 const FeaturedProductsSection = () => {
   const [products, setProducts] = useState([]);
@@ -18,7 +19,10 @@ const FeaturedProductsSection = () => {
           image: product.img[0], // Assuming the first image is the main one
           category: product.categories[0] || "CATEGORY", // Fallback to "CATEGORY" if none provided
           name: product.title,
-          price: product.price
+          price: product.price,
+          size: product.size[0],
+          color: product.color[0],
+          brand:product.brand
         }));
         setProducts(featuredProducts);
         setLoading(false);
@@ -45,6 +49,7 @@ const FeaturedProductsSection = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products.map((product, index) => (
           <ProductCard key={index} {...product} theme={theme} />
+          // console.log(product)
         ))}
       </div>
     </section>

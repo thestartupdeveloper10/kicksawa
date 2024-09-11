@@ -1,28 +1,29 @@
-import React from 'react';
 import { Heart, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
-const ProductCard = ({ id, image, category, name, price }) => {
+const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
+  const navigate = useNavigate();
 
-  const userId = user?._id;
+  console.log('The wishlist has the following products:', wishlist.wishlists);
+
+  const userId = user?.id;
+  console.log('User ID:', userId);
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  console.log('userWishlist:', userWishlist);
   const isInWishlist = userWishlist.products.some(item => item._id === id);
 
-  console.log('ProductCard - Props:', { id, image, category, name, price });
-  console.log('ProductCard - Is in wishlist:', isInWishlist);
 
   const handleAddToWishlist = () => {
     if (!user) {
-      console.log('User not logged in. Redirect to login page.');
-      // Implement logic to redirect to login page or show login modal
+      navigate('/login');
       return;
     }
     if (isInWishlist) {
@@ -36,12 +37,11 @@ const ProductCard = ({ id, image, category, name, price }) => {
 
   const handleAddToBag = () => {
     if (!user) {
-      console.log('User not logged in. Redirect to login page.');
-      // Implement logic to redirect to login page or show login modal
+      navigate('/login');
       return;
     }
-    console.log('Adding to bag:', { id, name, category, image, price });
-    dispatch(addProduct({ userId, product: { _id: id, title: name, categories: [category], img: [image], price, quantity: 1 } }));
+    console.log('Adding to bag:', { id, name, category, image, price,size,color,brand });
+    dispatch(addProduct({ userId, product: { _id: id, title: name, categories: [category], img: [image], price, quantity: 1 ,size: [size],color: [color],brand} }));
   };
 
   return (
@@ -59,12 +59,13 @@ const ProductCard = ({ id, image, category, name, price }) => {
           >
             <Heart className={`w-5 h-5 ${theme === 'dark' ? 'text-white' : 'text-black'} ${isInWishlist ? 'fill-current' : ''}`} />
           </button>
-          <button 
-            onClick={handleAddToBag}
+          <Link to={`/product/${id}`}>
+          <button
             className={`p-1 ${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} rounded-full shadow`}
           >
             <ShoppingBag className={`w-5 h-5 ${theme === 'dark' ? 'text-white' : 'text-black'}`} />
           </button>
+          </Link>
         </div>
       </div>
       <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-1 capitalize`}>{category}</div>

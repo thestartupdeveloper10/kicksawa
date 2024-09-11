@@ -25,6 +25,8 @@ const SingleProductPage = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
 
+  
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -41,7 +43,7 @@ const SingleProductPage = () => {
     fetchProduct();
   }, [id]);
 
-  const isInWishlist = user && wishlist.wishlists[user._id]?.products.some(item => item._id === id);
+  const isInWishlist = user && wishlist.wishlists[user.id]?.products.some(item => item._id === id);
 
   const handleAddToCart = () => {
     if (!user) {
@@ -53,7 +55,7 @@ const SingleProductPage = () => {
       return;
     }
     dispatch(addProduct({
-      userId: user._id,
+      userId: user.id,
       product: {
         ...product,
         quantity,
@@ -62,16 +64,16 @@ const SingleProductPage = () => {
       }
     }));
   };
-
+  console.log('the selected quantity:',quantity)
   const handleToggleWishlist = () => {
     if (!user) {
       navigate('/login');
       return;
     }
     if (isInWishlist) {
-      dispatch(removeProductWishlist({ userId: user._id, productId: id }));
+      dispatch(removeProductWishlist({ userId: user.id, productId: id }));
     } else {
-      dispatch(addProductWishlist({ userId: user._id, product }));
+      dispatch(addProductWishlist({ userId: user.id, product }));
     }
   };
 
