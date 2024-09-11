@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
-const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => {
+const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }) => {
   const dispatch = useDispatch();
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
@@ -27,7 +27,7 @@ const SneakerItem = ({ id, name, description, image, isImageRight, theme }) => {
       dispatch(removeProductWishlist({ userId, productId: id }));
     } else {
       console.log('Adding to wishlist:', { id, name, description, image });
-      dispatch(addProductWishlist({ userId, product: { _id: id, title: name, desc: description, img: [image] } }));
+      dispatch(addProductWishlist({ userId, product: { _id: id, title: name, desc: description, img: [image],price:price } }));
     }
   };
 

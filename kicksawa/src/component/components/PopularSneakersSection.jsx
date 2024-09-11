@@ -17,7 +17,8 @@ const PopularSneakersSection = () => {
           id: sneaker._id,
           name: sneaker.title.toUpperCase(),
           description: sneaker.desc.length > 150 ? sneaker.desc.substring(0, 147) + '...' : sneaker.desc,
-          image: sneaker.img[0] // Assuming the first image is the main one
+          image: sneaker.img[0], // Assuming the first image is the main one
+          price:sneaker.price
         }));
         setSneakers(popularSneakers);
         setLoading(false);
@@ -43,6 +44,7 @@ const PopularSneakersSection = () => {
       <h2 className="text-2xl font-bold text-center mb-8">POPULAR PRODUCTS</h2>
       <div className="max-w-4xl mx-auto">
         {sneakers.map((sneaker, index) => (
+          
           <SneakerItem key={sneaker.id} {...sneaker} isImageRight={index % 2 !== 0} theme={theme} />
         ))}
       </div>

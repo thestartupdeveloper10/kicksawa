@@ -8,7 +8,6 @@ import { removeProductWishlist } from '../../redux/wishlistRedux';
 import { addProduct } from '../../redux/cartRedux';
 
 const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
-  
   <div className={`flex items-center px-2 py-4 border-b ${theme === 'dark' ? 'bg-[#130d14]' : 'border-gray-200 bg-gray-200'}`}>
     <img src={item.product.img[0]} alt={item.product.title} className="w-20 h-20 object-cover mr-4" />
     <div className="flex-grow">
@@ -17,12 +16,13 @@ const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
       <p className="font-bold">${item.product.price.toFixed(2)}</p>
     </div>
     <div className="flex items-center space-x-2">
+    <Link to={`/product/${item.product._id}`}>
       <button
-        onClick={() => onAddToCart(item)}
         className={`p-2 rounded ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
       >
         <ShoppingBag size={20} />
       </button>
+      </Link>
       <button
         onClick={() => onRemove(item.product._id)}
         className="p-2 text-red-500 hover:text-red-700"
@@ -40,7 +40,7 @@ const FavoritesPage = () => {
   const wishlist = useSelector(state => state.wishlist);
 
   console.log('FavoritesPage - User:', user);
-  console.log('FavoritesPage - Wishlist:', wishlist);
+  console.log('FavoritesPage - Wishlist-items:', wishlist.wishlists);
 
   const userId = user?.id;
   console.log('the id is: ',userId)
