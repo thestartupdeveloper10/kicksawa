@@ -44,6 +44,11 @@ const SignUpPage = () => {
     }
   };
 
+  const handleGoogleSignUp = () => {
+    // Implement Google Sign-Up logic here
+    console.log('Google Sign-Up clicked');
+  };
+
   const inputClasses = `appearance-none rounded-none relative block w-full px-3 py-2 border ${
     theme === 'dark' 
       ? 'border-gray-600 bg-gray-800 text-white placeholder-gray-400' 
@@ -154,6 +159,28 @@ const SignUpPage = () => {
             </button>
           </div>
         </form>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className={`w-full border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className={`px-2 ${theme === 'dark' ? 'bg-[#130d14] text-gray-400' : 'bg-gray-50 text-gray-500'}`}>Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={handleGoogleSignUp}
+              className={`w-full flex justify-center py-2 px-4 border ${theme === 'dark' ? 'border-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black`}
+            >
+              <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
+              Sign up with Google
+            </button>
+          </div>
+        </div>
+
         <div className="text-center">
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
             Already have an account?{' '}

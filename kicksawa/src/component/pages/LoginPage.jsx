@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../components/ThemeContext';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../redux/userRedux';
 import { publicRequest } from '../../service/requestMethods';
+import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
+import app from '@/service/firebase';
+import axios from 'axios';
 
 const LoginPage = () => {
   const { theme } = useTheme();
@@ -14,7 +17,8 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  const auth = getAuth(app)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +36,27 @@ const LoginPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider()
+    provider.setCustomParameters({ prompt: 'select_account' })
+    try {
+        const resultsFromGoogle = await signInWithPopup(auth, provider)
+        const res = await axios.post('http://localhost:3000/api/auth/google', {
+          name: resultsFromGoogle.user.displayName,
+          email: resultsFromGoogle.user.email,
+          googlePhotoUrl: resultsFromGoogle.user.photoURL,
+      });
+      if (res.status === 200) {
+        dispatch(loginSuccess(res.data));
+        navigate('/');
+    }
+        
+    } catch (error) {
+      console.log(error);
+    }
+    
   };
 
   return (
@@ -118,7 +143,29 @@ const LoginPage = () => {
             </button>
           </div>
         </form>
-        <div className="text-center">
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className={`w-full border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className={`px-2 ${theme === 'dark' ? 'bg-[#130d14] text-gray-400' : 'bg-gray-50 text-gray-500'}`}>Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={handleGoogleSignIn}
+              className={`w-full flex justify-center py-2 px-4 border ${theme === 'dark' ? 'border-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black`}
+            >
+              <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
+              Sign in with Google
+            </button>
+          </div>
+        </div>
+
+        <div className="text-center mt-6">
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             Don't have an account?{' '}
             <Link to="/signup" className={`font-medium ${theme === 'dark' ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-800'}`}>
