@@ -13,8 +13,7 @@ const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
   const isInWishlist = userWishlist.products.some(item => item._id === id);
 
-  console.log('SneakerItem - Props:', { id, name, description, image, isImageRight, theme });
-  console.log('SneakerItem - Is in wishlist:', isInWishlist);
+
 
   const handleAddToWishlist = () => {
     if (!user) {

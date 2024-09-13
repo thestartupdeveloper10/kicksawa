@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
@@ -31,16 +31,12 @@ const Navbar = () => {
   const cart = useSelector(state => state.cart);
   const wishlist = useSelector(state => state.wishlist);
 
- 
-
   const userId = user?.id;
-  const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
-  const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  const userCart = cart?.carts?.[userId] || { products: {}, quantity: 0, total: 0 };
+  const userWishlist = wishlist?.wishlists?.[userId] || { products: [] };
 
-  const cartItemCount = Object.values(userCart.products).length
+  const cartItemCount = Object.values(userCart.products).length;
   const wishlistItemCount = userWishlist.products.length;
-
- 
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);
@@ -119,11 +115,14 @@ const Navbar = () => {
                   {user ? (
                     <>
                       <p className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
-                        Hello, {user.email}
+                        Hello, <span className='font-bold'>{user.email}</span>
                       </p>
-                      <Link to="/my-account" className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-                        Profile
-                      </Link>
+                      {user.profilePic && (
+                        <Link to="/my-account" className={`flex gap-3 items-center block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
+                          <img src={user.profilePic} alt="" className='h-7 w-7 object-contain rounded-full' />
+                          <h1>Profile</h1>
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className={`block w-full text-left px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}

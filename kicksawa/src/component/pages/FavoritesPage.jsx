@@ -39,17 +39,12 @@ const FavoritesPage = () => {
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
 
-  console.log('FavoritesPage - User:', user);
-  console.log('FavoritesPage - Wishlist-items:', wishlist.wishlists);
+  
 
   const userId = user?.id;
-  console.log('the id is: ',userId)
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
-  console.log(userWishlist)
   const favorites = userWishlist.products;
 
-  console.log('FavoritesPage - User Wishlist:', userWishlist);
-  console.log('FavoritesPage - Favorites:', favorites);
 
   const removeFromFavorites = (productId) => {
     console.log('Removing from favorites:', productId);
