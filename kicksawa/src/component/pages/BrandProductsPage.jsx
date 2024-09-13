@@ -31,8 +31,8 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isInCart, 
         ))}
       </div>
       <div className="flex justify-between">
+      <Link to={`/product/${product._id}`}>
         <button 
-          onClick={() => onAddToCart(product)}
           className={`${
             theme === 'dark' 
               ? 'bg-white text-black hover:bg-gray-200' 
@@ -42,6 +42,7 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isInCart, 
           <ShoppingBag size={16} className="mr-2" />
           {isInCart ? 'In Cart' : 'Add to Cart'}
         </button>
+        </Link>
         <button 
           onClick={() => onToggleFavorite(product)}
           className={`${

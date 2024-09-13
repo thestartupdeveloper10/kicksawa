@@ -13,7 +13,7 @@ const FavoriteItem = ({ item, onRemove, onAddToCart, theme }) => (
     <div className="flex-grow">
       <h3 className="font-semibold">{item.product.title}</h3>
       <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{item.product.brand}</p>
-      <p className="font-bold">${item.product.price.toFixed(2)}</p>
+      <p className="font-bold">Ksh: {item.product.price.toFixed(2)}</p>
     </div>
     <div className="flex items-center space-x-2">
     <Link to={`/product/${item.product._id}`}>

@@ -31,6 +31,8 @@ const Navbar = () => {
   const cart = useSelector(state => state.cart);
   const wishlist = useSelector(state => state.wishlist);
 
+  console.log('user is :',user)
+
   const userId = user?.id;
   const userCart = cart?.carts?.[userId] || { products: {}, quantity: 0, total: 0 };
   const userWishlist = wishlist?.wishlists?.[userId] || { products: [] };
@@ -40,7 +42,7 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);
-  const menuItems = ['SHOP', 'BRANDS', 'CONTACT'];
+  const menuItems = ['SHOP', 'BRANDS', 'CONTACT-US'];
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
@@ -106,16 +108,26 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
+
+            <Link to='/cart' className="p-1 relative">
+              <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+
             <div className="relative">
               <button onClick={toggleUserMenu} className="p-1">
-                <User className="w-5 h-5 md:w-6 md:h-6" />
+                {user?.profilePic ? <img src={user.profilePic} alt="" className="w-5 h-5 md:w-6 md:h-6 rounded-full" /> : <User className="w-5 h-5 md:w-6 md:h-6" />}
               </button>
               {isUserMenuOpen && (
                 <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} ring-1 ring-black ring-opacity-5`}>
                   {user ? (
                     <>
                       <p className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
-                        Hello, <span className='font-bold'>{user.email}</span>
+                        Hello, <span className='font-bold'>{user.name}</span>
                       </p>
                       {user.profilePic && (
                         <Link to="/my-account" className={`flex gap-3 items-center block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>
@@ -138,14 +150,7 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-            <Link to='/cart' className="p-1 relative">
-              <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
+           
             <button onClick={toggleTheme} className="p-1">
               {theme === 'dark' ? <Sun className="w-5 h-5 md:w-6 md:h-6" /> : <Moon className="w-5 h-5 md:w-6 md:h-6" />}
             </button>

@@ -3,6 +3,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../components/ThemeContext';
 import { publicRequest } from '../../service/requestMethods';
+import GoogleAuth from '../components/GoogleAuth';
 
 const SignUpPage = () => {
   const { theme } = useTheme();
@@ -170,15 +171,7 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          <div className="mt-6">
-            <button
-              onClick={handleGoogleSignUp}
-              className={`w-full flex justify-center py-2 px-4 border ${theme === 'dark' ? 'border-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black`}
-            >
-              <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
-              Sign up with Google
-            </button>
-          </div>
+          <GoogleAuth/>
         </div>
 
         <div className="text-center">

@@ -5,9 +5,8 @@ import { useTheme } from '../components/ThemeContext';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../redux/userRedux';
 import { publicRequest } from '../../service/requestMethods';
-import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
-import app from '@/service/firebase';
-import axios from 'axios';
+import GoogleAuth from '../components/GoogleAuth';
+
 
 const LoginPage = () => {
   const { theme } = useTheme();
@@ -18,7 +17,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false)
-  const auth = getAuth(app)
+ 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,26 +37,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider()
-    provider.setCustomParameters({ prompt: 'select_account' })
-    try {
-        const resultsFromGoogle = await signInWithPopup(auth, provider)
-        const res = await axios.post('http://localhost:3000/api/auth/google', {
-          name: resultsFromGoogle.user.displayName,
-          email: resultsFromGoogle.user.email,
-          googlePhotoUrl: resultsFromGoogle.user.photoURL,
-      });
-      if (res.status === 200) {
-        dispatch(loginSuccess(res.data));
-        navigate('/');
-    }
-        
-    } catch (error) {
-      console.log(error);
-    }
-    
-  };
+ 
 
   return (
     <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? '' : 'bg-gray-50'} transition-colors duration-300`}>
@@ -153,16 +133,8 @@ const LoginPage = () => {
               <span className={`px-2 ${theme === 'dark' ? 'bg-[#130d14] text-gray-400' : 'bg-gray-50 text-gray-500'}`}>Or continue with</span>
             </div>
           </div>
-
-          <div className="mt-6">
-            <button
-              onClick={handleGoogleSignIn}
-              className={`w-full flex justify-center py-2 px-4 border ${theme === 'dark' ? 'border-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black`}
-            >
-              <img className="h-5 w-5 mr-2" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
-              Sign in with Google
-            </button>
-          </div>
+          <GoogleAuth/>
+          
         </div>
 
         <div className="text-center mt-6">

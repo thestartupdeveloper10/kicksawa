@@ -50,7 +50,7 @@ authRouter.post('/login', async (request, response) => {
 
   response
     .status(200)
-    .send({ token, email: user.email, name: user.name, isAdmin: user.isAdmin ,id:user._id,profilePic: user.profilePicture })
+    .send({ token, email: user.email, name: user.username, isAdmin: user.isAdmin ,id:user._id,profilePic: user.profilePicture })
 })
 
 
@@ -67,7 +67,7 @@ authRouter.post('/google',async (req,res)=>{
       // const { password, ...rest } = user._doc;
       res
         .status(200)
-        .send({ token, email: user.email, name: user.name, isAdmin: user.isAdmin ,id:user._id,profilePic: user.profilePicture});
+        .send({ token, email: user.email, name: user.username, isAdmin: user.isAdmin ,id:user._id,profilePic: user.profilePicture});
     } else {
       const generatedPassword =
         Math.random().toString(36).slice(-8) +
@@ -89,7 +89,7 @@ authRouter.post('/google',async (req,res)=>{
       // const { password, ...rest } = newUser._doc;
       res
         .status(200)
-        .send({ token, email: user.email, name: user.name, isAdmin: user.isAdmin ,id:user._id });
+        .send({ token, email: user.email, name: user.username, isAdmin: user.isAdmin ,id:user._id });
     }
   } catch (error) {
     console.log(error);
