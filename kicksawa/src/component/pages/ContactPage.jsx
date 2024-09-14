@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext'; // Import the useTheme hook
+import { useTheme } from '../components/ThemeContext';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ContactPage = () => {
-  const { theme } = useTheme(); // Use the theme hook
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,12 +25,22 @@ const ContactPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log('Form submitted:', formData);
-    // Reset form after submission
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const response = await axios.post('http://localhost:3000/api/contact', formData);
+      console.log('Form submitted successfully:', response.data);
+      setSubmitStatus({ type: 'success', message: 'Your message has been sent successfully!' });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitStatus({ type: 'error', message: 'An error occurred. Please try again later.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -35,6 +49,13 @@ const ContactPage = () => {
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-center mb-12">Contact Us</h1>
         
+        {submitStatus && (
+          <Alert className={`mb-6 ${submitStatus.type === 'success' ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400'}`}>
+            <AlertTitle>{submitStatus.type === 'success' ? 'Success!' : 'Error'}</AlertTitle>
+            <AlertDescription>{submitStatus.message}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex flex-col md:flex-row gap-12">
           {/* Contact Form */}
           <div className="md:w-2/3">
@@ -90,8 +111,9 @@ const ContactPage = () => {
               <button 
                 type="submit" 
                 className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} py-3 px-6 rounded transition-colors`}
+                disabled={isSubmitting}
               >
-                Send Message
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>

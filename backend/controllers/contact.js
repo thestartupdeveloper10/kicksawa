@@ -6,7 +6,7 @@ const {
     verifyTokenAndAdmin,
   } = require("./verifyToken");
 
-contactRouter.post('/',verifyToken, async (req, res) => {
+contactRouter.post('/', async (req, res) => {
   const newContact = new Contact(req.body);
 
   try {
