@@ -1,4 +1,4 @@
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag,ShoppingBasket } from 'lucide-react';
 import { Link,useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,14 +11,19 @@ const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
   const navigate = useNavigate();
+  const cartlist = useSelector(state => state.cart);
 
   console.log('The wishlist has the following products:', wishlist.wishlists);
 
   const userId = user?.id;
-  console.log('User ID:', userId);
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
-  console.log('userWishlist:', userWishlist);
-  const isInWishlist = userWishlist.products.some(item => item._id === id);
+  const userCartlist = cartlist.carts[userId] || { products: [] };
+  const isInWishlist = userWishlist.products.some(item => item.product._id ==id);
+  const isInCartlist =userCartlist.products
+
+  const productIds = Object.entries(isInCartlist).map(([key, product]) => product._id);
+  const alreadyInCart = productIds.includes(id);
+
 
 
   const handleAddToWishlist = () => {
@@ -52,7 +57,7 @@ const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
             <img src={image} alt={name} className="w-full h-48 object-contain" />
           </Link>
         </div>
-        <div className="absolute z-50 top-2 right-2 flex space-x-2">
+        <div className="absolute z-30 top-2 right-2 flex space-x-2">
           <button 
             onClick={handleAddToWishlist}
             className={`p-1 ${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} rounded-full shadow`}
@@ -63,7 +68,7 @@ const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
           <button
             className={`p-1 ${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} rounded-full shadow`}
           >
-            <ShoppingBag className={`w-5 h-5 ${theme === 'dark' ? 'text-white' : 'text-black'}`} />
+            {alreadyInCart ? <ShoppingBasket className={`w-5 h-5 ${theme === 'dark' ? 'text-[#d2691e]' : 'text-[#d2691e]'}`} /> : <ShoppingBag className={`w-5 h-5 ${theme === 'dark' ? 'text-white' : 'text-black'}`} />}
           </button>
           </Link>
         </div>

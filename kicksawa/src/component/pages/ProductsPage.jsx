@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Heart, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Heart, ShoppingBag, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
@@ -9,36 +9,50 @@ import { useTheme } from '../components/ThemeContext';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
-const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isFavorite }) => (
-  <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
-    <div className='bg-white'>
-      <Link to={`/product/${product._id}`}>
-        <img src={product.img[0]} alt={product.title} className="w-full h-48 object-contain" />
-      </Link>
-    </div>
-    <div className="p-4">
-      <h3 className="font-bold text-lg mb-2 capitalize">{product.title}</h3>
-      <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
-      <p className="font-semibold">Ksh: {product.price.toFixed(2)}</p>
-      <div className="mt-4 flex justify-between">
-      <Link to={`/product/${product._id}`}>
-        <button
-          className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}
-        >
-          <ShoppingBag size={16} className="inline mr-2" />
-          Add to Cart
-        </button>
+const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isFavorite }) => {
+  const user = useSelector(state => state.user.currentUser);
+  const wishlist = useSelector(state => state.wishlist);
+  const cartlist = useSelector(state => state.cart);
+  const userId = user?.id;
+  const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  const userCartlist = cartlist.carts[userId] || { products: [] };
+  const isInWishlist = userWishlist.products.some(item => item.product._id == product._id);
+  const isInCartlist = userCartlist.products;
+
+  const productIds = Object.entries(isInCartlist).map(([key, product]) => product._id);
+  const alreadyInCart = productIds.includes(product._id);
+
+  return (
+    <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
+      <div className='bg-white'>
+        <Link to={`/product/${product._id}`}>
+          <img src={product.img[0]} alt={product.title} className="w-full h-48 object-contain" />
         </Link>
-        <button 
-          onClick={() => onToggleFavorite(product)}
-          className={`${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} px-4 py-2 rounded transition-colors`}
-        >
-          <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
-        </button>
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-lg mb-2 capitalize">{product.title}</h3>
+        <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-2`}>{product.brand}</p>
+        <p className="font-semibold">Ksh: {product.price.toFixed(2)}</p>
+        <div className="mt-4 flex justify-between">
+          <Link to={`/product/${product._id}`}>
+            <button
+              className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}
+            >
+              <ShoppingBag size={16} className="inline mr-2" />
+              {alreadyInCart ? 'In Cart' : 'Add to Cart'}
+            </button>
+          </Link>
+          <button 
+            onClick={() => onToggleFavorite(product)}
+            className={`${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} px-4 py-2 rounded transition-colors`}
+          >
+            <Heart className={`w-5 h-5 ${theme === 'dark' ? 'text-white' : 'text-black'} ${isInWishlist ? 'fill-current' : ''}`} />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme, isOpen, toggleOpen }) => {
   return (
@@ -91,15 +105,19 @@ const ProductsPage = () => {
     categories: false,
     priceRanges: false
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoading(true);
       try {
         const res = await axios.get("http://localhost:3000/api/products");
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {
-        console.log(error)
+        console.log(error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchProducts();
@@ -120,7 +138,7 @@ const ProductsPage = () => {
       return;
     }
     const userWishlist = wishlist.wishlists[userId] || { products: [] };
-    const isProductInWishlist = userWishlist.products.some(item => item._id === product._id);
+    const isProductInWishlist = userWishlist.products.some(item => item.product._id == product._id);
     console.log('Toggling favorite:', { userId, product, isProductInWishlist });
     if (isProductInWishlist) {
       dispatch(removeProductWishlist({ userId, productId: product._id }));
@@ -222,51 +240,64 @@ const ProductsPage = () => {
             />
           </div>
           <div className="md:w-3/4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentProducts.map(product => (
-                <ProductCard 
-                  key={product._id} 
-                  product={product} 
-                  theme={theme}
-                  onAddToCart={handleAddToCart}
-                  onToggleFavorite={handleToggleFavorite}
-                  isFavorite={wishlist.wishlists[userId]?.products.some(item => item._id === product._id)}
-                />
-              ))}
-            </div>
-            {filteredProducts.length === 0 && (
-              <p className={`text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mt-8`}>No products found matching your filters.</p>
-            )}
-            {filteredProducts.length > productsPerPage && (
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={() => paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`mx-1 px-3 py-2 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'} rounded-md disabled:opacity-50 transition-colors`}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                {[...Array(Math.ceil(filteredProducts.length / productsPerPage)).keys()].map(number => (
-                  <button
-                    key={number + 1}
-                    onClick={() => paginate(number + 1)}
-                    className={`mx-1 px-3 py-2 rounded-md ${
-                      currentPage === number + 1 
-                        ? (theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white')
-                        : (theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700')
-                    } transition-colors`}
-                  >
-                    {number + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => paginate(currentPage + 1)}
-                  disabled={currentPage === Math.ceil(filteredProducts.length / productsPerPage)}
-                  className={`mx-1 px-3 py-2 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'} rounded-md disabled:opacity-50 transition-colors`}
-                >
-                  <ChevronRight size={20} />
-                </button>
+            {isLoading ? (
+             <div className="flex items-center justify-center h-screen">
+              <div className="relative">
+                  <div className="h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-200"></div>
+                  <div className="absolute top-0 left-0 h-24 w-24 rounded-full border-t-8 border-b-8 border-gray-500 animate-spin">
+        
+                  </div>
               </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {currentProducts.map(product => (
+                    <ProductCard 
+                      key={product._id} 
+                      product={product} 
+                      theme={theme}
+                      onAddToCart={handleAddToCart}
+                      onToggleFavorite={handleToggleFavorite}
+                      isFavorite={wishlist.wishlists[userId]?.products.some(item => item._id === product._id)}
+                    />
+                  ))}
+                </div>
+                {filteredProducts.length === 0 && (
+                  <p className={`text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mt-8`}>No products found matching your filters.</p>
+                )}
+                {filteredProducts.length > productsPerPage && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`mx-1 px-3 py-2 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'} rounded-md disabled:opacity-50 transition-colors`}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    {[...Array(Math.ceil(filteredProducts.length / productsPerPage)).keys()].map(number => (
+                      <button
+                        key={number + 1}
+                        onClick={() => paginate(number + 1)}
+                        className={`mx-1 px-3 py-2 rounded-md ${
+                          currentPage === number + 1 
+                            ? (theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white')
+                            : (theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700')
+                        } transition-colors`}
+                      >
+                        {number + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === Math.ceil(filteredProducts.length / productsPerPage)}
+                      className={`mx-1 px-3 py-2 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'} rounded-md disabled:opacity-50 transition-colors`}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

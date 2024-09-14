@@ -9,7 +9,24 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 
-const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isInCart, isInFavorites }) => (
+const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite }) => {
+  const wishlist = useSelector(state => state.wishlist);
+  const cartlist = useSelector(state => state.cart);
+  const user = useSelector(state => state.user.currentUser);
+  
+  const userId = user?.id;
+  const userWishlist = wishlist.wishlists[userId] || { products: [] };
+  const userCartlist = cartlist.carts[userId] || { products: [] };
+  const isInWishlist = userWishlist.products.some(item => item.product._id ==product._id);
+  const isInCartlist =userCartlist.products
+
+  console.log('all in list',userWishlist)
+
+  const productIds = Object.entries(isInCartlist).map(([key, product]) => product._id);
+  const alreadyInCart = productIds.includes(product._id);
+
+  console.log('alreadyInCart',alreadyInCart)
+  return(
   <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
     <div className='bg-white'>
       <Link to={`/product/${product._id}`}>
@@ -40,7 +57,7 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isInCart, 
           } px-4 py-2 rounded transition-colors flex items-center`}
         >
           <ShoppingBag size={16} className="mr-2" />
-          {isInCart ? 'In Cart' : 'Add to Cart'}
+          {alreadyInCart ? 'In Cart' : 'Add to Cart'}
         </button>
         </Link>
         <button 
@@ -50,15 +67,15 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isInCart, 
               ? 'text-white hover:bg-gray-700' 
               : 'text-black hover:bg-gray-200'
           } px-4 py-2 rounded transition-colors ${
-            isInFavorites ? 'text-red-500' : ''
+            isInWishlist ? 'text-black' : ''
           }`}
         >
-          <Heart size={16} fill={isInFavorites ? 'currentColor' : 'none'} />
+          <Heart size={16} fill={isInWishlist ? 'currentColor' : 'none'} />
         </button>
       </div>
     </div>
   </div>
-);
+)};
 
 const FilterSection = ({ title, options, selectedOptions, onOptionChange, theme }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,7 +132,10 @@ const BrandProductsPage = () => {
   const [productsPerPage] = useState(9);
   const { theme } = useTheme();
 
-  console.log(brand)
+
+ 
+
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -171,7 +191,7 @@ const BrandProductsPage = () => {
     }
     const userId = user.id;
     const userWishlist = wishlist.wishlists[userId] || { products: [] };
-    const isInWishlist = userWishlist.products.some(item => item._id === product._id);
+    const isInWishlist = userWishlist.products.some(item => item.product._id ==product._id);
     if (isInWishlist) {
       dispatch(removeProductWishlist({ userId, productId: product._id }));
     } else {
@@ -268,7 +288,7 @@ const BrandProductsPage = () => {
                   onAddToCart={handleAddToCart}
                   onToggleFavorite={handleToggleFavorite}
                   isInCart={cart.carts[user?._id]?.products[product._id] !== undefined}
-                  isInFavorites={wishlist.wishlists[user?._id]?.products.some(item => item._id === product._id)}
+                  isInFavorites={wishlist}
                 />
               ))}
             </div>

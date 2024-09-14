@@ -3,6 +3,7 @@ import axios from 'axios';
 import ProductCard from "./ProductCard";
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
 import { color } from 'framer-motion';
+import ProductCardSkeleton from './ProductCardSkeleton';
 
 const FeaturedProductsSection = () => {
   const [products, setProducts] = useState([]);
@@ -36,7 +37,12 @@ const FeaturedProductsSection = () => {
   }, []);
 
   if (loading) {
-    return <div className={`text-center py-12 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Loading featured products...</div>;
+    return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <ProductCardSkeleton></ProductCardSkeleton>
+      <ProductCardSkeleton></ProductCardSkeleton>
+      <ProductCardSkeleton></ProductCardSkeleton>
+      <ProductCardSkeleton></ProductCardSkeleton>
+    </div>;
   }
 
   if (error) {

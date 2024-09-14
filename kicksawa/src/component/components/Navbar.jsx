@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon } from 'lucide-react';
+import { Heart, User, ShoppingBag, Search, Menu, X, Sun, Moon, Loader } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
@@ -24,14 +24,13 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user.currentUser);
   const cart = useSelector(state => state.cart);
   const wishlist = useSelector(state => state.wishlist);
-
-  console.log('user is :',user)
 
   const userId = user?.id;
   const userCart = cart?.carts?.[userId] || { products: {}, quantity: 0, total: 0 };
@@ -47,6 +46,7 @@ const Navbar = () => {
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setIsSearching(true);
       try {
         const response = await axios.get(`http://localhost:3000/api/products?search=${encodeURIComponent(searchQuery.trim())}`);
         navigate('/search', { state: { results: response.data, query: searchQuery.trim() } });
@@ -54,6 +54,8 @@ const Navbar = () => {
         setSearchQuery('');
       } catch (error) {
         console.error('Error performing search:', error);
+      } finally {
+        setIsSearching(false);
       }
     }
   };
@@ -90,9 +92,14 @@ const Navbar = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
                   className={`${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-black'} rounded-full py-1 px-3 pr-8 focus:outline-none w-full md:w-auto`}
+                  disabled={isSearching}
                 />
-                <button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                  <Search className="w-4 h-4" />
+                <button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2" disabled={isSearching}>
+                  {isSearching ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
                 </button>
               </form>
             ) : (
@@ -127,7 +134,7 @@ const Navbar = () => {
                   {user ? (
                     <>
                       <p className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
-                        Hello, <span className='font-bold'>{user.name}</span>
+                        Hello, <span className='font-bold capitalize'>{user.name}</span>
                       </p>
                       {user.profilePic && (
                         <Link to="/my-account" className={`flex gap-3 items-center block px-4 py-2 text-sm ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}>

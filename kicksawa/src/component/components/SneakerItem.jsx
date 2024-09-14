@@ -1,5 +1,5 @@
 import { Heart, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
@@ -8,17 +8,26 @@ const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }
   const dispatch = useDispatch();
   const user = useSelector(state => state.user.currentUser);
   const wishlist = useSelector(state => state.wishlist);
+  const cartlist = useSelector(state => state.cart);
+  const navigate = useNavigate();
+
+  console.log('cartlist:', cartlist);
 
   const userId = user?.id;
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
-  const isInWishlist = userWishlist.products.some(item => item._id === id);
+  const userCartlist = cartlist.carts[userId] || { products: [] };
+  const isInWishlist = userWishlist.products.some(item => item.product._id ==id);
+  const isInCartlist =userCartlist.products
+
+  const productIds = Object.entries(isInCartlist).map(([key, product]) => product._id);
+  const alreadyInCart = productIds.includes(id);
 
 
+  
 
   const handleAddToWishlist = () => {
     if (!user) {
-      console.log('User not logged in. Redirect to login page.');
-      // Implement logic to redirect to login page or show login modal
+      navigate('/login');
       return;
     }
     if (isInWishlist) {
@@ -72,7 +81,7 @@ const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }
             className={`flex items-center justify-center border ${theme === 'dark' ? 'border-white hover:bg-white hover:text-black' : 'border-black hover:bg-black hover:text-white'} px-4 py-2 transition-colors`}
           >
             <ShoppingBag className="w-4 h-4 mr-2" />
-            ADD TO BAG
+            {alreadyInCart ? 'IN CART' : 'ADD TO CART'}
           </button>
           </Link>
         </div>

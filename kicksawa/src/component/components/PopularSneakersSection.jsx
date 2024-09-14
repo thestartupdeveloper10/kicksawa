@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import SneakerItem from "./SneakerItem";
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
+import SneakerItemSkeleton from './SneakerItemSkeleton';
 
 const PopularSneakersSection = () => {
   const [sneakers, setSneakers] = useState([]);
@@ -32,7 +33,11 @@ const PopularSneakersSection = () => {
   }, []);
 
   if (loading) {
-    return <div className={`text-center py-12 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Loading popular sneakers...</div>;
+    return <div className="max-w-4xl mx-auto">
+      <SneakerItemSkeleton/>
+      <SneakerItemSkeleton/>
+      <SneakerItemSkeleton/>
+    </div>
   }
 
   if (error) {
