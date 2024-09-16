@@ -58,13 +58,13 @@ const Footer = () => {
           </div>
           {/* Our Brands Section */}
           <div className="w-full md:w-1/4 px-4 mb-8">
-            <h3 className="font-bold mb-4">OUR BRANDS</h3>
+            <h3 className="font-bold mb-4">OUR TOP BRANDS</h3>
             <ul className="space-y-2">
-              {['ADIDAS', 'ADIDAS ORIGINALS', 'NIKE', 'HUGO BOSS', 'VERSACE'].map((item) => (
+              {['Adidas', 'Puma', 'Nike', 'Under Armour', 'New Balance','Reebok'].map((item) => (
                 <li key={item}>
-                  <a href="#" className={`text-sm hover:underline ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>
+                  <Link to={`/products/${item}`} className={`text-sm uppercase hover:underline ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>
                     {item}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

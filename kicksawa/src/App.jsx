@@ -12,6 +12,7 @@ import BrandsPage from './component/pages/BrandsPage';
 import BrandProductsPage from './component/pages/BrandProductsPage';
 import { ThemeProvider } from './component/components/ThemeContext';
 import SearchResults from './component/pages/SearchResults';
+import OrderConfirmationPage from './component/pages/OrderConfirmationPage';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path='/brands' element={<BrandsPage/>}></Route>
           <Route path="/products/:brand" element={<BrandProductsPage />} />
           <Route path="/search" element={<SearchResults/>} />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage/>} />
         </Routes>
       </Router>
     </>

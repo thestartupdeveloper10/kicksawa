@@ -17,6 +17,8 @@ const UserProfilePage = () => {
   const fileInputRef = useRef(null);
   const [orders, setOrders] = useState([]);
 
+  console.log('currentUser',currentUser)
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -88,8 +90,8 @@ const UserProfilePage = () => {
           {/* Profile Image */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              {user.profileImage ? (
-                <img src={user.profileImage} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
+              {user.profilePic ? (
+                <img src={user.profilePic} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
               ) : (
                 <div className={`w-32 h-32 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
                   <User size={48} />
@@ -115,9 +117,9 @@ const UserProfilePage = () => {
 
           <div className="space-y-4">
             {/* User information fields */}
-            {['username', 'email', 'phone', 'address'].map((field) => (
+            {['name', 'email', 'phone', 'address'].map((field) => (
               <div key={field} className="flex items-center">
-                {field === 'username' && <User className="mr-2" size={20} />}
+                {field === 'name' && <User className="mr-2" size={20} />}
                 {field === 'email' && <Mail className="mr-2" size={20} />}
                 {field === 'phone' && <Phone className="mr-2" size={20} />}
                 {field === 'address' && <MapPin className="mr-2" size={20} />}

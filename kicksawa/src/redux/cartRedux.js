@@ -44,8 +44,15 @@ const cartSlice = createSlice({
       }
       console.log('Updated cart state:', state);
     },
+    clearCart: (state, action) => {
+      const { userId } = action.payload;
+      if (state.carts[userId]) {
+        state.carts[userId] = { products: {}, quantity: 0, total: 0 };
+      }
+      console.log('Cleared cart for user:', userId);
+    },
   },
 });
 
-export const { addProduct, updateProductQuantity, removeProduct } = cartSlice.actions;
+export const { addProduct, updateProductQuantity, removeProduct, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;

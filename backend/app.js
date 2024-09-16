@@ -13,6 +13,7 @@ const cartRouter = require('./controllers/cart');
 const orderRouter = require('./controllers/order');
 const stripeRoute = require('./controllers/stripe');
 const contactRouter = require('./controllers/contact');
+const mpesaRouter = require('./controllers/mpesa');
 
 mongoose.set('strictQuery', false);
 
@@ -37,7 +38,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/products', productRouter);
 app.use('/api/carts', cartRouter);
 app.use('/api/orders', orderRouter);
-app.use('/api/checkout', stripeRoute);
+app.use('/api/checkout', mpesaRouter);
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
