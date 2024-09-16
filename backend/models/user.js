@@ -11,6 +11,15 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true // this ensures the uniqueness of username  
     },
+    phone: {       
+      type: Number,
+      unique: true, // this ensures the uniqueness of username 
+      default:254712345678 
+      },
+    location: {       
+        type: String,
+         default:'Not Provided'
+        },
     profilePicture: {
       type: String,
       default:

@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Edit2, Eye, EyeOff, Camera } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { User, Mail, Phone, MapPin, Edit2, Camera } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../components/ThemeContext';
 import { userRequest } from '../../service/requestMethods';
-import { updateUser } from '../../redux/userRedux'; // Assume this action exists
+import { updateUser } from '../../redux/userRedux';
 
 const UserProfilePage = () => {
   const { theme } = useTheme();
@@ -13,24 +13,23 @@ const UserProfilePage = () => {
   const currentUser = useSelector((state) => state.user.currentUser);
   const [user, setUser] = useState(currentUser);
   const [editing, setEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null);
   const [orders, setOrders] = useState([]);
-
-  console.log('currentUser',currentUser)
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await userRequest.get(`orders/find/${currentUser.id}`);
+        const response = await userRequest.get(`orders/find/${currentUser._id}`);
         setOrders(response.data);
       } catch (error) {
         console.error('Error fetching orders:', error);
+        setError('Failed to load orders. Please try again.');
       }
     };
 
     fetchOrders();
-  }, []);
+  }, [currentUser._id]);
 
   const handleEdit = () => {
     setEditing(true);
@@ -38,11 +37,13 @@ const UserProfilePage = () => {
 
   const handleSave = async () => {
     try {
-      const response = await userRequest.put(`/users/${user._id}`, user);
+      const response = await userRequest.put(`/users/${currentUser.id}`, user);
       dispatch(updateUser(response.data));
       setEditing(false);
+      setUser(response.data);
     } catch (error) {
       console.error('Error updating user:', error);
+      setError('Failed to update user details. Please try again.');
     }
   };
 
@@ -58,9 +59,10 @@ const UserProfilePage = () => {
       formData.append('image', file);
       try {
         const response = await userRequest.post('/upload', formData);
-        setUser(prevUser => ({ ...prevUser, profileImage: response.data.imageUrl }));
+        setUser(prevUser => ({ ...prevUser, profilePic: response.data.imageUrl }));
       } catch (error) {
         console.error('Error uploading image:', error);
+        setError('Failed to upload image. Please try again.');
       }
     }
   };
@@ -71,11 +73,30 @@ const UserProfilePage = () => {
 
   const inputClasses = `border-b ${theme === 'dark' ? 'border-gray-500 bg-[#130d14] text-white' : 'border-gray-300 text-black'} focus:border-black outline-none transition-colors`;
 
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-200 text-yellow-800';
+      case 'processing':
+        return 'bg-blue-200 text-blue-800';
+      case 'shipped':
+        return 'bg-green-200 text-green-800';
+      case 'delivered':
+        return 'bg-purple-200 text-purple-800';
+      case 'cancelled':
+        return 'bg-red-200 text-red-800';
+      default:
+        return 'bg-gray-200 text-gray-800';
+    }
+  };
+
   return (
-    <div className={`${theme === 'dark' ? ' text-white' : 'bg-gray-50 text-black'} min-h-screen transition-colors duration-300`}>
+    <div className={`${theme === 'dark' ? 'text-white' : 'bg-gray-50 text-black'} min-h-screen transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">User Profile</h1>
+        
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
         
         <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} shadow rounded-lg p-6 mb-8`}>
           <div className="flex justify-between items-center mb-6">
@@ -117,12 +138,12 @@ const UserProfilePage = () => {
 
           <div className="space-y-4">
             {/* User information fields */}
-            {['name', 'email', 'phone', 'address'].map((field) => (
+            {['name', 'email', 'phone', 'location'].map((field) => (
               <div key={field} className="flex items-center">
-                {field === 'name' && <User className="mr-2" size={20} />}
+                {field === 'name' && <User className="mr-2 capitalize" size={20} />}
                 {field === 'email' && <Mail className="mr-2" size={20} />}
                 {field === 'phone' && <Phone className="mr-2" size={20} />}
-                {field === 'address' && <MapPin className="mr-2" size={20} />}
+                {field === 'location' && <MapPin className="mr-2" size={20} />}
                 {editing ? (
                   <input
                     type={field === 'email' ? 'email' : 'text'}
@@ -161,8 +182,12 @@ const UserProfilePage = () => {
                   <tr key={order._id} className={theme === 'dark' ? 'border-b border-gray-700' : 'border-b'}>
                     <td className="px-4 py-2">{order._id}</td>
                     <td className="px-4 py-2">{new Date(order.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-2">${order.total.toFixed(2)}</td>
-                    <td className="px-4 py-2">{order.status}</td>
+                    <td className="px-4 py-2">Ksh {order.amount.toFixed(2)}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
