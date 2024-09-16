@@ -22,7 +22,7 @@ const UserProfilePage = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await userRequest.get('/orders');
+        const response = await userRequest.get(`orders/find/${currentUser.id}`);
         setOrders(response.data);
       } catch (error) {
         console.error('Error fetching orders:', error);
