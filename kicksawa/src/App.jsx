@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, } from 'react-router-dom';
-import Home from './component/pages/Home'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './component/pages/Home';
 import LoginPage from './component/pages/LoginPage';
 import SignUpPage from './component/pages/SignUpPage';
 import CartPage from './component/pages/CartPage';
@@ -13,32 +13,32 @@ import BrandProductsPage from './component/pages/BrandProductsPage';
 import { ThemeProvider } from './component/components/ThemeContext';
 import SearchResults from './component/pages/SearchResults';
 import OrderConfirmationPage from './component/pages/OrderConfirmationPage';
+import ProtectedRoute from './component/components/ProtectedRoute';
 
 function App() {
   return (
     <ThemeProvider>
-    <>
-
       <Router>
         <Routes>
-          <Route path='/' element={<Home/>}></Route>
-          <Route path='/login' element={<LoginPage/>}></Route>
-          <Route path='/signup' element={<SignUpPage/>}></Route>
-          <Route path='/cart' element={<CartPage/>}></Route>
-          <Route path='/favorites' element={<FavoritesPage/>}></Route>
-          <Route path='/products' element={<ProductsPage/>}></Route>
-          <Route path='/product/:id' element={<SingleProductPage/>}></Route>
-          <Route path='/my-account' element={<UserProfilePage/>}></Route>
-          <Route path='/contact-us' element={<ContactPage/>}></Route>
-          <Route path='/brands' element={<BrandsPage/>}></Route>
+          <Route path='/' element={<Home />} />
+          <Route path='/login' element={<LoginPage />} />
+          <Route path='/signup' element={<SignUpPage />} />
+          <Route path='/products' element={<ProductsPage />} />
+          <Route path='/product/:id' element={<SingleProductPage />} />
+          <Route path='/contact-us' element={<ContactPage />} />
+          <Route path='/brands' element={<BrandsPage />} />
           <Route path="/products/:brand" element={<BrandProductsPage />} />
-          <Route path="/search" element={<SearchResults/>} />
-          <Route path="/order-confirmation" element={<OrderConfirmationPage/>} />
+          <Route path="/search" element={<SearchResults />} />
+
+          {/* Protected Routes */}
+          <Route path='/cart' element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+          <Route path='/favorites' element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
+          <Route path='/my-account' element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+          <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
         </Routes>
       </Router>
-    </>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;
