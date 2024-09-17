@@ -17,10 +17,12 @@ const UserProfilePage = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
 
+  console.log('the current user is',currentUser)
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await userRequest.get(`orders/find/${currentUser._id}`);
+        const response = await userRequest.get(`orders/find/${currentUser.id}`);
         setOrders(response.data);
       } catch (error) {
         console.error('Error fetching orders:', error);
