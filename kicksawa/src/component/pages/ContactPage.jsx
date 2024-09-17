@@ -125,15 +125,15 @@ const ContactPage = () => {
               <ul className="space-y-4">
                 <li className="flex items-center">
                   <Mail className="w-5 h-5 mr-4" />
-                  <span>info@urbancult.com</span>
+                  <span>info@labelsafi.com</span>
                 </li>
                 <li className="flex items-center">
                   <Phone className="w-5 h-5 mr-4" />
-                  <span>+1 (123) 456-7890</span>
+                  <span>+254 712346789</span>
                 </li>
                 <li className="flex items-center">
                   <MapPin className="w-5 h-5 mr-4" />
-                  <span>123 Urban Street, City, Country</span>
+                  <span>Nairobi, City, Kenya</span>
                 </li>
               </ul>
             </div>

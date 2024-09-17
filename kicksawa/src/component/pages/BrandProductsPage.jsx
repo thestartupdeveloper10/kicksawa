@@ -20,12 +20,11 @@ const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite }) => {
   const isInWishlist = userWishlist.products.some(item => item.product._id ==product._id);
   const isInCartlist =userCartlist.products
 
-  console.log('all in list',userWishlist)
+ 
 
   const productIds = Object.entries(isInCartlist).map(([key, product]) => product._id);
   const alreadyInCart = productIds.includes(product._id);
 
-  console.log('alreadyInCart',alreadyInCart)
   return(
   <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105`}>
     <div className='bg-white'>
