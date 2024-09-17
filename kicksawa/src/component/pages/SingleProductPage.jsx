@@ -66,7 +66,7 @@ const SingleProductPage = () => {
       }
     }));
   };
-  console.log('the selected quantity:',quantity)
+
   const handleToggleWishlist = () => {
     if (!user) {
       navigate('/login');

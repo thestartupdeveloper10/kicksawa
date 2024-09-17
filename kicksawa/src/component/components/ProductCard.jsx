@@ -13,7 +13,6 @@ const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
   const navigate = useNavigate();
   const cartlist = useSelector(state => state.cart);
 
-  console.log('The wishlist has the following products:', wishlist.wishlists);
 
   const userId = user?.id;
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
@@ -32,10 +31,8 @@ const ProductCard = ({ id, image, category, name, price,size,color,brand }) => {
       return;
     }
     if (isInWishlist) {
-      console.log('Removing from wishlist:', id);
       dispatch(removeProductWishlist({ userId, productId: id }));
     } else {
-      console.log('Adding to wishlist:', { id, name, category, image, price });
       dispatch(addProductWishlist({ userId, product: { _id: id, title: name, categories: [category], img: [image], price } }));
     }
   };

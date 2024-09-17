@@ -2,6 +2,7 @@ import React from 'react';
 import { Truck, ShieldCheck, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
+import Footer_Nav from './Footer_Nav';
 
 const Footer = () => {
   const { theme } = useTheme(); // Use the theme hook
@@ -11,7 +12,7 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         {/* Top section with logo and features */}
         <div className="flex flex-wrap justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold italic mb-4 md:mb-0">Urban Cult.</h2>
+          <h2 className="text-3xl font-bold italic mb-4 md:mb-0">Label Safi.</h2>
           <div className="flex flex-wrap justify-end space-x-4 md:space-x-8">
             <div className="flex items-center">
               <Truck className="w-5 h-5 mr-2" />
@@ -34,13 +35,7 @@ const Footer = () => {
           <div className="w-full md:w-1/4 px-4 mb-8">
             <h3 className="font-bold mb-4">GO TO</h3>
             <ul className="space-y-2">
-              {['HOME', 'SHOP', 'BRANDS', 'MY ACCOUNT', 'CONTACT US'].map((item) => (
-                <li key={item}>
-                  <Link to={`/${item.toLowerCase().replace(' ', '-')}`} className={`text-sm hover:underline ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <Footer_Nav theme={theme}/>
             </ul>
           </div>
           {/* Information Section */}

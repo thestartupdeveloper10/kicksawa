@@ -11,7 +11,7 @@ const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }
   const cartlist = useSelector(state => state.cart);
   const navigate = useNavigate();
 
-  console.log('cartlist:', cartlist);
+
 
   const userId = user?.id;
   const userWishlist = wishlist.wishlists[userId] || { products: [] };
@@ -31,10 +31,8 @@ const SneakerItem = ({ id, name, description, image,price, isImageRight, theme }
       return;
     }
     if (isInWishlist) {
-      console.log('Removing from wishlist:', id);
       dispatch(removeProductWishlist({ userId, productId: id }));
     } else {
-      console.log('Adding to wishlist:', { id, name, description, image });
       dispatch(addProductWishlist({ userId, product: { _id: id, title: name, desc: description, img: [image],price:price } }));
     }
   };

@@ -42,14 +42,12 @@ const cartSlice = createSlice({
         userCart.total -= product.price * product.quantity;
         delete userCart.products[productId];
       }
-      console.log('Updated cart state:', state);
     },
     clearCart: (state, action) => {
       const { userId } = action.payload;
       if (state.carts[userId]) {
         state.carts[userId] = { products: {}, quantity: 0, total: 0 };
       }
-      console.log('Cleared cart for user:', userId);
     },
   },
 });

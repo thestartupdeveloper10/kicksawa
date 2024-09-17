@@ -97,7 +97,7 @@ const HeroSection = () => {
       >
         <img
           className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-          src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+          src="https://cdn.pixabay.com/photo/2017/07/13/02/53/shoe-2498994_960_720.jpg"
           alt="Urban streetwear collection"
         />
       </motion.div>

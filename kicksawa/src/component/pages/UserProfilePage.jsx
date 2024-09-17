@@ -17,7 +17,7 @@ const UserProfilePage = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
 
-  console.log('the current user is',currentUser)
+
 
   useEffect(() => {
     const fetchOrders = async () => {

@@ -18,7 +18,7 @@ const getCurrentUserToken = () => {
 // Get the token
 const TOKEN = getCurrentUserToken();
 
-console.log('Current user token:', TOKEN);
+
 
 export const publicRequest = axios.create({
   baseURL: BASE_URL,

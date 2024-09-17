@@ -49,14 +49,12 @@ const FavoritesPage = () => {
 
 
   const removeFromFavorites = (productId) => {
-    console.log('Removing from favorites:', productId);
     dispatch(removeProductWishlist({ userId, productId }));
   };
 
   const addToCart = (item) => {
     console.log('Adding to cart:', item);
     dispatch(addProduct({ userId, product: { ...item, quantity: 1 } }));
-    // Optionally, you could remove the item from favorites after adding to cart
     removeFromFavorites(item._id);
     console.log('item id',item._id)
   };
