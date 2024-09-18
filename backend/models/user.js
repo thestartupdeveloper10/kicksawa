@@ -1,30 +1,32 @@
 const mongoose = require('mongoose')
 
+const unique = () =>{
+  return Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+}
+
 const userSchema = new mongoose.Schema({
-  username: {       
+  username: {
     type: String,
     required: true,
-    unique: true // this ensures the uniqueness of username  
-    },
-  email: {       
+    unique: true
+  },
+  email: {
     type: String,
     required: true,
-    unique: true // this ensures the uniqueness of username  
-    },
-    phone: {       
-      type: Number,
-      unique: true, // this ensures the uniqueness of username 
-      default:254712345678 
-      },
-    location: {       
-        type: String,
-         default:'Not Provided'
-        },
-    profilePicture: {
-      type: String,
-      default:
-        'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
-    },
+    unique: true
+  },
+  phone: {
+    type: String,
+    default: 'Not Provided'
+  },
+  location: {
+    type: String,
+    default: 'Not Provided'
+  },
+  profilePicture: {
+    type: String,
+    default: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
+  },
   passwordHash: String,
   isAdmin: {
     type: Boolean,
@@ -34,12 +36,12 @@ const userSchema = new mongoose.Schema({
 { timestamps: true }
 )
 
+
 userSchema.set('toJSON', {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()
     delete returnedObject._id
     delete returnedObject.__v
-    // the passwordHash should not be revealed
     delete returnedObject.passwordHash
   }
 })

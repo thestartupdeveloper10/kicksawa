@@ -15,7 +15,9 @@ function GoogleAuth() {
         const provider = new GoogleAuthProvider()
         provider.setCustomParameters({ prompt: 'select_account' })
         try {
-            const resultsFromGoogle = await signInWithPopup(auth, provider)
+            const resultsFromGoogle = await signInWithPopup(auth, provider
+            )
+            console.log('results from goole',resultsFromGoogle)
             const res = await axios.post('http://localhost:3000/api/auth/google', {
               name: resultsFromGoogle.user.displayName,
               email: resultsFromGoogle.user.email,
