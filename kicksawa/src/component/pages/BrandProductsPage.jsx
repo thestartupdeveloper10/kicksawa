@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { ChevronLeft, ChevronRight, Search, ChevronDown, ChevronUp, ShoppingBag, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -8,6 +7,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
+import { publicRequest } from '@/service/requestMethods';
 
 const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite }) => {
   const wishlist = useSelector(state => state.wishlist);
@@ -146,7 +146,7 @@ const BrandProductsPage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/products?brand=${brand}`);
+        const response = await publicRequest.get(`products?brand=${brand}`);
         setProducts(response.data);
         setFilteredProducts(response.data);
         setLoading(false);

@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../components/ThemeContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { publicRequest } from '@/service/requestMethods';
 
 const ContactPage = () => {
   const { theme } = useTheme();
@@ -31,7 +32,7 @@ const ContactPage = () => {
     setSubmitStatus(null);
 
     try {
-      const response = await axios.post('http://localhost:3000/api/contact', formData);
+      const response = await publicRequest.post('contact', formData);
       console.log('Form submitted successfully:', response.data);
       setSubmitStatus({ type: 'success', message: 'Your message has been sent successfully!' });
       setFormData({ name: '', email: '', subject: '', message: '' });

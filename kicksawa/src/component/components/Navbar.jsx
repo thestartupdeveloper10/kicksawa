@@ -5,6 +5,7 @@ import { useTheme } from './ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../redux/userRedux';
 import axios from 'axios';
+import { publicRequest } from '@/service/requestMethods';
 
 const MenuItem = ({ href, children, onClick }) => {
   const { theme } = useTheme();
@@ -48,7 +49,7 @@ const Navbar = () => {
     if (searchQuery.trim()) {
       setIsSearching(true);
       try {
-        const response = await axios.get(`http://localhost:3000/api/products?search=${encodeURIComponent(searchQuery.trim())}`);
+        const response = await publicRequest.get(`products?search=${encodeURIComponent(searchQuery.trim())}`);
         navigate('/search', { state: { results: response.data, query: searchQuery.trim() } });
         setIsSearchOpen(false);
         setSearchQuery('');

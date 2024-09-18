@@ -3,6 +3,7 @@ import axios from 'axios';
 import SneakerItem from "./SneakerItem";
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
 import SneakerItemSkeleton from './SneakerItemSkeleton';
+import { publicRequest } from '@/service/requestMethods';
 
 const PopularSneakersSection = () => {
   const [sneakers, setSneakers] = useState([]);
@@ -13,7 +14,7 @@ const PopularSneakersSection = () => {
   useEffect(() => {
     const fetchSneakers = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/products?category=streetwear');
+        const response = await publicRequest.get('products?category=streetwear');
         const popularSneakers = response.data.slice(0, 5).map(sneaker => ({
           id: sneaker._id,
           name: sneaker.title.toUpperCase(),

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
@@ -9,6 +8,7 @@ import { useTheme } from '../components/ThemeContext';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 import { grid } from 'ldrs';
+import { publicRequest } from '@/service/requestMethods';
 grid.register()
 
 const SingleProductPage = () => {
@@ -32,7 +32,7 @@ const SingleProductPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/products/find/${id}`);
+        const response = await publicRequest.get(`products/find/${id}`);
         setProduct(response.data);
         setLoading(false);
       } catch (err) {

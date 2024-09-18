@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
 
 import adidas from '../../assets/imgs/adidas.svg'

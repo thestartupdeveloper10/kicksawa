@@ -3,11 +3,11 @@ import { ChevronDown, ChevronUp, Heart, ShoppingBag, ChevronLeft, ChevronRight, 
 import { useDispatch, useSelector } from 'react-redux';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
-import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../components/ThemeContext';
 import { addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
+import { publicRequest } from '@/service/requestMethods';
 
 const ProductCard = ({ product, theme, onAddToCart, onToggleFavorite, isFavorite }) => {
   const user = useSelector(state => state.user.currentUser);
@@ -111,7 +111,7 @@ const ProductsPage = () => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await axios.get("http://localhost:3000/api/products");
+        const res = await publicRequest.get("products");
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {

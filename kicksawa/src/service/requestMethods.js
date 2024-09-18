@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api/";
-
+const BASE_URL = "http://localhost:5000/api/";
+// http://localhost:5000
 // Function to get the current user's token
 const getCurrentUserToken = () => {
   const persistRoot = localStorage.getItem("persist:root");

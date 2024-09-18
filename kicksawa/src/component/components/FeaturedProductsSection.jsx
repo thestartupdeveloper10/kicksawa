@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import ProductCard from "./ProductCard";
 import { useTheme } from './ThemeContext'; // Import the useTheme hook
 import { color } from 'framer-motion';
+import { publicRequest } from '@/service/requestMethods';
 import ProductCardSkeleton from './ProductCardSkeleton';
 
 const FeaturedProductsSection = () => {
@@ -14,7 +14,7 @@ const FeaturedProductsSection = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/products?new=true');
+        const response = await publicRequest.get('products?new=true');
         const featuredProducts = response.data.slice(0, 4).map(product => ({
           id: product._id,
           image: product.img[0], // Assuming the first image is the main one

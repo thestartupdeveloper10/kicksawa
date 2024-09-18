@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 import { useTheme } from '../components/ThemeContext';
+import { userRequest } from '@/service/requestMethods';
 
 function PaymentForm({ onSuccess, cartTotal }) {
   const { theme } = useTheme();
@@ -13,7 +13,7 @@ function PaymentForm({ onSuccess, cartTotal }) {
     setLoading(true);
     setMessage('');
     try {
-      const response = await axios.post('http://localhost:3000/api/checkout/initiate-payment', { 
+      const response = await userRequest.post('checkout/initiate-payment', { 
         phoneNumber, 
         amount: cartTotal 
       });
