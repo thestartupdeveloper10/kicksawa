@@ -31,6 +31,7 @@ mongoose.connect(url)
 app.use(cors());
 app.use(express.json());
 app.use(middleware.requestLogger);
+app.use(express.static('dist'));
 
 app.use('/api/contact', contactRouter);
 app.use('/api/auth', authRouter);
