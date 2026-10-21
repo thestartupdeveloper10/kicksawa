@@ -1,202 +1,313 @@
-import { useState, useRef, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Edit2, Camera } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
-import Footer from '../components/Footer';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, Loader2, Mail, MapPin, Phone, User } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext';
-import { userRequest } from '../../service/requestMethods';
+import Footer from '../components/Footer';
 import { updateUser } from '../../redux/userRedux';
+import { storage } from '../../service/firebase';
+import { userRequest } from '../../service/requestMethods';
+import { Container, Section, SectionHeader } from '@/components/ui/layout';
+import { Button } from '@/components/ui/button';
+import { Field, FormMessage, Input } from '@/components/ui/field';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatPrice } from '@/lib/products';
+import { cn } from '@/lib/utils';
+
+const FIELDS = [
+  { key: 'name', label: 'Name', icon: User, type: 'text', autoComplete: 'name' },
+  { key: 'email', label: 'Email', icon: Mail, type: 'email', autoComplete: 'email' },
+  { key: 'phone', label: 'Phone', icon: Phone, type: 'tel', autoComplete: 'tel' },
+  { key: 'location', label: 'Location', icon: MapPin, type: 'text', autoComplete: 'address-level2' },
+];
+
+/** Order status drives a token-based badge instead of hardcoded pastel pairs,
+ *  which were unreadable in dark mode. */
+const STATUS_VARIANT = {
+  pending: 'outline',
+  processing: 'outline',
+  shipped: 'solid',
+  delivered: 'success',
+  cancelled: 'brand',
+};
+
+const OrderRow = ({ order }) => {
+  const status = String(order.status || 'pending').toLowerCase();
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line py-4">
+      <div className="min-w-0">
+        <p className="tnum truncate text-[0.9375rem] font-semibold">
+          #{String(order._id).slice(-8).toUpperCase()}
+        </p>
+        <p className="tnum mt-0.5 text-sm text-muted-foreground">
+          {new Date(order.createdAt).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </p>
+      </div>
+      <div className="flex items-center gap-5">
+        <Badge variant={STATUS_VARIANT[status] ?? 'neutral'}>{status}</Badge>
+        <span className="tnum text-[0.9375rem] font-semibold">{formatPrice(order.amount)}</span>
+      </div>
+    </li>
+  );
+};
 
 const UserProfilePage = () => {
-  const { theme } = useTheme();
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.user.currentUser);
+
   const [user, setUser] = useState(currentUser);
   const [editing, setEditing] = useState(false);
-  const fileInputRef = useRef(null);
-  const [orders, setOrders] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-
-
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  // Kept separate from `error`: a failed fetch must not be reported as
+  // "no orders yet", which tells the reader something untrue about their account.
+  const [ordersError, setOrdersError] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    let cancelled = false;
+
+    const load = async () => {
       try {
-        const response = await userRequest.get(`orders/find/${currentUser.id}`);
-        setOrders(response.data);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        setError('Failed to load orders. Please try again.');
+        const { data } = await userRequest.get(`orders/find/${currentUser.id}`);
+        if (!cancelled) setOrders(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load orders', err);
+        if (!cancelled) setOrdersError('We could not load your orders right now.');
+      } finally {
+        if (!cancelled) setOrdersLoading(false);
       }
     };
 
-    fetchOrders();
-  }, [currentUser._id]);
-
-  const handleEdit = () => {
-    setEditing(true);
-  };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser.id]);
 
   const handleSave = async () => {
+    setSaving(true);
+    setError(null);
     try {
-      const response = await userRequest.put(`/users/${currentUser.id}`, user);
-      dispatch(updateUser(response.data));
+      const { data } = await userRequest.put(`/users/${currentUser.id}`, {
+        username: user.name,
+        email: user.email,
+        phone: user.phone,
+        location: user.location,
+        profilePicture: user.profilePic,
+      });
+      // Keep the token and the field names the rest of the app reads.
+      const saved = {
+        ...currentUser,
+        name: data.username,
+        email: data.email,
+        phone: data.phone,
+        location: data.location,
+        profilePic: data.profilePicture,
+      };
+      dispatch(updateUser(saved));
+      setUser(saved);
       setEditing(false);
-      setUser(response.data);
-    } catch (error) {
-      console.error('Error updating user:', error);
-      setError('Failed to update user details. Please try again.');
+    } catch (err) {
+      console.error('Failed to update profile', err);
+      setError('We could not save your changes. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUser(prevUser => ({ ...prevUser, [name]: value }));
-  };
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('image', file);
-      try {
-        const response = await userRequest.post('/upload', formData);
-        setUser(prevUser => ({ ...prevUser, profilePic: response.data.imageUrl }));
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        setError('Failed to upload image. Please try again.');
-      }
+    setUploading(true);
+    setError(null);
+    try {
+      const fileRef = ref(storage, `avatars/${currentUser.id}-${Date.now()}-${file.name}`);
+      await uploadBytes(fileRef, file);
+      const imageUrl = await getDownloadURL(fileRef);
+      setUser((prev) => ({ ...prev, profilePic: imageUrl }));
+    } catch (err) {
+      console.error('Avatar upload failed', err);
+      setError('We could not upload that image.');
+    } finally {
+      setUploading(false);
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
-  };
-
-  const inputClasses = `border-b ${theme === 'dark' ? 'border-gray-500 bg-[#130d14] text-white' : 'border-gray-300 text-black'} focus:border-black outline-none transition-colors`;
-
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-yellow-200 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-200 text-blue-800';
-      case 'shipped':
-        return 'bg-green-200 text-green-800';
-      case 'delivered':
-        return 'bg-purple-200 text-purple-800';
-      case 'cancelled':
-        return 'bg-red-200 text-red-800';
-      default:
-        return 'bg-gray-200 text-gray-800';
-    }
+  const cancelEdit = () => {
+    setUser(currentUser);
+    setEditing(false);
+    setError(null);
   };
 
   return (
-    <div className={`${theme === 'dark' ? 'text-white' : 'bg-gray-50 text-black'} min-h-screen transition-colors duration-300`}>
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">User Profile</h1>
-        
-        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
-        
-        <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} shadow rounded-lg p-6 mb-8`}>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">Personal Information</h2>
-            {!editing && (
-              <button onClick={handleEdit} className={`${theme === 'dark' ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}>
-                <Edit2 size={20} />
-              </button>
+
+      <main id="main" className="flex-1">
+        <Section padding="md">
+          <Container width="default">
+            <SectionHeader as="h1" eyebrow="Account" title="My Account" />
+
+            {error && (
+              <FormMessage className="mb-8">{error}</FormMessage>
             )}
-          </div>
 
-          {/* Profile Image */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              {user.profilePic ? (
-                <img src={user.profilePic} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
-              ) : (
-                <div className={`w-32 h-32 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
-                  <User size={48} />
+            <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+              {/* Profile */}
+              <div className="lg:col-span-5">
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    {user.profilePic ? (
+                      <img
+                        src={user.profilePic}
+                        alt=""
+                        className="h-24 w-24 rounded-full object-cover img-outline"
+                      />
+                    ) : (
+                      <span className="flex h-24 w-24 items-center justify-center rounded-full bg-surface">
+                        <User className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
+                      </span>
+                    )}
+
+                    {editing && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        aria-label="Change profile photo"
+                        className={cn(
+                          'absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full',
+                          'bg-foreground text-background ring-4 ring-background',
+                          'transition-transform duration-fast ease-swift active:scale-[0.96]',
+                          'disabled:opacity-60'
+                        )}
+                      >
+                        {uploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+                        ) : (
+                          <Camera className="h-4 w-4" strokeWidth={2} />
+                        )}
+                      </button>
+                    )}
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="truncate font-display text-display-sm font-extrabold uppercase capitalize font-wide">
+                      {user.name || 'Your Profile'}
+                    </h2>
+                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
-              )}
-              {editing && (
-                <button 
-                  onClick={triggerFileInput} 
-                  className={`absolute bottom-0 right-0 ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} rounded-full p-2 transition-colors`}
-                >
-                  <Camera size={16} />
-                </button>
-              )}
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImageUpload} 
-                className="hidden" 
-                accept="image/*"
-              />
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            {/* User information fields */}
-            {['name', 'email', 'phone', 'location'].map((field) => (
-              <div key={field} className="flex items-center">
-                {field === 'name' && <User className="mr-2 capitalize" size={20} />}
-                {field === 'email' && <Mail className="mr-2" size={20} />}
-                {field === 'phone' && <Phone className="mr-2" size={20} />}
-                {field === 'location' && <MapPin className="mr-2" size={20} />}
-                {editing ? (
-                  <input
-                    type={field === 'email' ? 'email' : 'text'}
-                    name={field}
-                    value={user[field] || ''}
-                    onChange={handleChange}
-                    className={inputClasses}
-                  />
+                <div className="mt-9 space-y-5">
+                  {FIELDS.map(({ key, label, icon: Icon, type, autoComplete }) =>
+                    editing ? (
+                      <Field key={key} label={label}>
+                        {({ id, describedBy }) => (
+                          <Input
+                            id={id}
+                            describedBy={describedBy}
+                            type={type}
+                            autoComplete={autoComplete}
+                            value={user[key] || ''}
+                            onChange={(e) =>
+                              setUser((prev) => ({ ...prev, [key]: e.target.value }))
+                            }
+                          />
+                        )}
+                      </Field>
+                    ) : (
+                      <div key={key} className="flex items-start gap-3 border-b border-line pb-4">
+                        <Icon
+                          className="h-[18px] w-[18px] shrink-0 translate-y-1 text-muted-foreground"
+                          strokeWidth={1.75}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-micro uppercase text-muted-foreground">{label}</p>
+                          <p className="truncate text-[0.9375rem]">
+                            {user[key] || <span className="text-subtle-foreground">Not provided</span>}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                <div className="mt-8 flex gap-3">
+                  {editing ? (
+                    <>
+                      <Button onClick={handleSave} disabled={saving || uploading}>
+                        {saving && <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />}
+                        {saving ? 'Saving…' : 'Save Changes'}
+                      </Button>
+                      <Button variant="outline" onClick={cancelEdit} disabled={saving}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" onClick={() => setEditing(true)}>
+                      Edit Details
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Orders */}
+              <div className="lg:col-span-7">
+                <h2 className="mb-5 font-display text-display-sm font-extrabold uppercase font-wide">
+                  Order History
+                </h2>
+
+                {ordersLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : ordersError ? (
+                  <div className="border-t border-line py-14 text-center">
+                    <p className="font-semibold">Orders unavailable</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{ordersError}</p>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="border-t border-line py-14 text-center">
+                    <p className="font-semibold">No orders yet</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Your orders will appear here once you check out.
+                    </p>
+                  </div>
                 ) : (
-                  <span>{user[field] || 'Not provided'}</span>
+                  <ul className="border-t border-line">
+                    {orders.map((order) => (
+                      <OrderRow key={order._id} order={order} />
+                    ))}
+                  </ul>
                 )}
               </div>
-            ))}
-          </div>
-          {editing && (
-            <button onClick={handleSave} className={`mt-6 ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} px-4 py-2 rounded transition-colors`}>
-              Save Changes
-            </button>
-          )}
-        </div>
+            </div>
+          </Container>
+        </Section>
+      </main>
 
-        <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-white'} shadow rounded-lg p-6`}>
-          <h2 className="text-2xl font-semibold mb-4">Order History</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className={theme === 'dark' ? 'bg-[#23272a]' : 'bg-gray-100'}>
-                  <th className="px-4 py-2 text-left">Order ID</th>
-                  <th className="px-4 py-2 text-left">Date</th>
-                  <th className="px-4 py-2 text-left">Total</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map(order => (
-                  <tr key={order._id} className={theme === 'dark' ? 'border-b border-gray-700' : 'border-b'}>
-                    <td className="px-4 py-2">{order._id}</td>
-                    <td className="px-4 py-2">{new Date(order.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-2">Ksh {order.amount.toFixed(2)}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
       <Footer />
     </div>
   );

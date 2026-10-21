@@ -1,222 +1,305 @@
-/* eslint-disable react/display-name */
-/* eslint-disable react/prop-types */
-import React, { useState, useCallback } from 'react';
-import { Trash2, Plus, Minus, X } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Footer from '../components/Footer';
+import { useDispatch, useSelector } from 'react-redux';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext';
-import { updateProductQuantity, removeProduct, clearCart } from '../../redux/cartRedux';
+import Footer from '../components/Footer';
 import PaymentForm from '../components/PaymentForm';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { clearCart, removeProduct, updateProductQuantity } from '../../redux/cartRedux';
+import { Container } from '@/components/ui/layout';
+import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
+import { formatPrice } from '@/lib/products';
+import { FREE_DELIVERY_THRESHOLD, deliveryFeeFor } from '@/lib/site';
+import { cn } from '@/lib/utils';
 
-const CartItem = React.memo(({ item, onUpdateQuantity, onRemove, theme, isUpdating }) => (
-  <div className={`flex items-center py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-    <Link to={`/product/${item._id}`}>
-      <img src={item.img[0]} alt={item.title} className="w-20 h-20 object-cover mr-4" />
-    </Link>
-    <div className="flex-grow pl-3 md:pl-0">
-      <h3 className="font-semibold text-sm md:text-balance">{item.title}</h3>
-      <p className={theme === 'dark' ? 'text-gray-400 text-sm md:text-balance' : 'text-gray-600 text-sm md:text-balance'}>Brand: {item.brand}</p>
-      <p className={theme === 'dark' ? 'text-gray-400 text-sm md:text-balance' : 'text-gray-600 text-sm md:text-balance'}>Price: Ksh: {item.price.toFixed(2)}</p>
-      <div className="flex items-center mt-2">
-        <span className={`mr-2 ${theme === 'dark' ? 'text-gray-400 text-sm md:text-balance' : 'text-gray-600 text-sm md:text-balance'}`}>Color:</span>
-        <div 
-          className="w-6 h-6 rounded-full border border-gray-300" 
-          style={{ backgroundColor: item.selectedColor }}
-          title={item.selectedColor}
-        ></div>
-      </div>
-      {item.selectedSize && (
-        <p className={`mt-1 ${theme === 'dark' ? 'text-gray-400 text-sm md:text-balance' : 'text-gray-600 text-sm md:text-balance'}`}>Size: {item.selectedSize}</p>
-      )}
-    </div>
-    <div className="flex items-center">
-      <button 
-        onClick={() => onUpdateQuantity(item._id, item.quantity - 1)} 
-        className={`p-1 ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} rounded`}
-        disabled={isUpdating}
-      >
-        <Minus size={16} />
-      </button>
-      <span className="mx-2">{item.quantity}</span>
-      <button 
-        onClick={() => onUpdateQuantity(item._id, item.quantity + 1)} 
-        className={`p-1 ${theme === 'dark' ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200'} rounded`}
-        disabled={isUpdating}
-      >
-        <Plus size={16} />
-      </button>
-    </div>
-    <button 
-      onClick={() => onRemove(item._id)} 
-      className="ml-4 text-red-500 hover:text-red-600"
-      disabled={isUpdating}
-    >
-      <Trash2 size={20} />
-    </button>
-  </div>
-));
+/* -------------------------------------------------------------------------- */
 
-const Modal = ({ isOpen, onClose, children, theme }) => {
-  if (!isOpen) return null;
+const CartLine = ({ item, onUpdateQuantity, onRemove, busy }) => {
+  const lineTotal = item.price * item.quantity;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className={`${theme === 'dark' ? 'bg-[#130d14] text-white' : 'bg-white text-black'} p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative`}>
-        <button 
-          onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-        >
-          <X size={24} />
-        </button>
-        {children}
+    <li className="flex gap-4 border-b border-line py-6 sm:gap-6">
+      <Link
+        to={`/product/${item._id}`}
+        className="block h-24 w-24 shrink-0 overflow-hidden bg-[#f4f4f4] sm:h-32 sm:w-32"
+      >
+        <img
+          src={item.img?.[0]}
+          alt={item.title}
+          loading="lazy"
+          className="h-full w-full object-contain p-2 mix-blend-multiply"
+        />
+      </Link>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="truncate text-[0.9375rem] font-semibold capitalize">
+              <Link to={`/product/${item._id}`}>{item.title}</Link>
+            </h3>
+            <p className="mt-0.5 text-sm capitalize text-muted-foreground">
+              {[item.brand, item.categories?.[0]].filter(Boolean).join(' · ')}
+            </p>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {item.selectedSize && <span className="tnum">Size {item.selectedSize}</span>}
+              {item.selectedColor && (
+                <span className="flex items-center gap-1.5">
+                  Colour
+                  <span
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 rounded-full ring-1 ring-foreground/15"
+                    style={{ backgroundColor: item.selectedColor }}
+                  />
+                </span>
+              )}
+            </div>
+          </div>
+
+          <p className="tnum shrink-0 text-[0.9375rem] font-semibold">{formatPrice(lineTotal)}</p>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-4 pt-4">
+          <div className="inline-flex items-center rounded-full border border-line-strong">
+            <button
+              type="button"
+              onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)}
+              disabled={busy || item.quantity <= 1}
+              aria-label={`Decrease quantity of ${item.title}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,transform] duration-fast ease-swift hover:bg-surface active:scale-[0.96] disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <Minus className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <span className="tnum w-8 text-center text-sm font-semibold">{item.quantity}</span>
+            <button
+              type="button"
+              onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
+              disabled={busy || item.quantity >= 10}
+              aria-label={`Increase quantity of ${item.title}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,transform] duration-fast ease-swift hover:bg-surface active:scale-[0.96] disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onRemove(item.cartKey)}
+            disabled={busy}
+            aria-label={`Remove ${item.title} from bag`}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] duration-fast ease-swift hover:bg-surface hover:text-destructive active:scale-[0.96]"
+          >
+            <Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </button>
+        </div>
       </div>
-    </div>
+    </li>
   );
 };
 
+const SummaryRow = ({ label, value, strong, muted }) => (
+  <div
+    className={cn(
+      'flex items-baseline justify-between gap-4 py-1.5',
+      strong && 'border-t border-line pt-4 text-base font-semibold',
+      muted && 'text-muted-foreground'
+    )}
+  >
+    <span className={cn('text-sm', strong && 'text-base')}>{label}</span>
+    <span className={cn('tnum text-sm', strong && 'text-base')}>{value}</span>
+  </div>
+);
+
+/* -------------------------------------------------------------------------- */
+
 const CartPage = () => {
-  const { theme } = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector(state => state.user.currentUser);
-  const cart = useSelector(state => state.cart);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const user = useSelector((state) => state.user.currentUser);
+  const cart = useSelector((state) => state.cart);
 
-  const userId = user ? user.id : 'undefined';
+  const [busy, setBusy] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const userId = user?.id;
   const userCart = cart.carts[userId] || { products: {}, quantity: 0, total: 0 };
-  const cartItems = Object.values(userCart.products);
+  const items = useMemo(() => Object.values(userCart.products), [userCart.products]);
 
-  const updateQuantity = useCallback(async (id, newQuantity) => {
-    if (newQuantity > 0) {
-      setIsUpdating(true);
-      setError(null);
-      try {
-        await dispatch(updateProductQuantity({ userId, productId: id, quantity: newQuantity }));
-      } catch (err) {
-        setError('Failed to update quantity. Please try again.');
-      } finally {
-        setIsUpdating(false);
-      }
-    }
-  }, [dispatch, userId]);
-
-  const removeItem = useCallback(async (id) => {
-    setIsUpdating(true);
-    setError(null);
-    try {
-      await dispatch(removeProduct({ userId, productId: id }));
-    } catch (err) {
-      setError('Failed to remove item. Please try again.');
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [dispatch, userId]);
-
-  const handleClearCart = useCallback(async () => {
-    setIsUpdating(true);
-    setError(null);
-    try {
-      await dispatch(clearCart({ userId }));
-    } catch (err) {
-      setError('Failed to clear cart. Please try again.');
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [dispatch, userId]);
-
-  const subtotal = userCart.total;
-  const delivery = 200;
+  // Derived from the lines rather than the running total the reducer keeps, so
+  // the summary cannot drift if a line is ever mutated directly.
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
+  );
+  const unitCount = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items]
+  );
+  const delivery = deliveryFeeFor(subtotal);
   const total = subtotal + delivery;
+  const awayFromFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
 
-  const handleCheckout = () => {
-    setIsPaymentModalOpen(true);
-  };
+  const updateQuantity = useCallback(
+    (cartKey, quantity) => {
+      if (quantity < 1 || quantity > 10) return;
+      setBusy(true);
+      dispatch(updateProductQuantity({ userId, cartKey, quantity }));
+      setBusy(false);
+    },
+    [dispatch, userId]
+  );
+
+  const removeItem = useCallback(
+    (cartKey) => {
+      setBusy(true);
+      dispatch(removeProduct({ userId, cartKey }));
+      setBusy(false);
+    },
+    [dispatch, userId]
+  );
 
   const handlePaymentSuccess = () => {
-    setIsPaymentModalOpen(false);
+    setCheckoutOpen(false);
     dispatch(clearCart({ userId }));
     navigate('/order-confirmation');
   };
 
   return (
-    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen`}>
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
-        {error && (
-          <Alert className="mb-4 bg-red-100 border-red-400">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        {cartItems.length === 0 ? (
-          <div className="text-center">
-            <p className="mb-4">Your cart is empty.</p>
-            <Link to="/products" className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} py-2 px-4 rounded transition-colors`}>
-              Start Shopping
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="md:w-2/3">
-              {cartItems.map(item => (
-                <CartItem
-                  key={item._id}
-                  item={item}
-                  onUpdateQuantity={updateQuantity}
-                  onRemove={removeItem}
-                  theme={theme}
-                  isUpdating={isUpdating}
-                />
-              ))}
+
+      <main id="main" className="flex-1">
+        <Container width="default" className="pb-24 pt-10">
+          <h1 className="font-display text-display-md font-extrabold uppercase font-wide">
+            Your Bag{' '}
+            {items.length > 0 && (
+              <span className="tnum text-muted-foreground">({unitCount})</span>
+            )}
+          </h1>
+
+          {items.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="font-display text-display-sm font-extrabold uppercase font-wide">
+                Your Bag Is Empty
+              </p>
+              <p className="mt-2 text-muted-foreground">
+                Once you add something, it will show up here.
+              </p>
+              <Button asChild size="lg" className="mt-8">
+                <Link to="/products">Start Shopping</Link>
+              </Button>
             </div>
-            <div className="md:w-1/3">
-              <div className={`${theme === 'dark' ? 'bg-[#130d14]' : 'bg-gray-100'} p-6 rounded-lg`}>
-                <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal</span>
-                  <span>Ksh: {subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>Delivery Fee</span>
-                  <span>Ksh: {delivery.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t border-gray-300">
-                  <span>Total</span>
-                  <span>Ksh: {total.toFixed(2)}</span>
-                </div>
-                <button 
-                  onClick={handleCheckout}
-                  className={`w-full ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} py-3 mt-6 rounded transition-colors`}
-                  disabled={isUpdating}
+          ) : (
+            <div className="mt-8 grid gap-12 lg:grid-cols-12 lg:gap-16">
+              <div className="lg:col-span-7">
+                <ul className="border-t border-line">
+                  {items.map((item) => (
+                    <CartLine
+                      key={item.cartKey}
+                      item={item}
+                      onUpdateQuantity={updateQuantity}
+                      onRemove={removeItem}
+                      busy={busy}
+                    />
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(true)}
+                  className="mt-6 text-sm font-medium text-muted-foreground underline decoration-line-strong underline-offset-4 transition-colors hover:text-destructive hover:decoration-destructive"
                 >
-                  Proceed to Checkout
-                </button>
-                <Link to="/products" className={`w-full border ${theme === 'dark' ? 'border-white text-white hover:bg-gray-800' : 'border-black text-black hover:bg-gray-100'} py-3 mt-4 rounded transition-colors text-center block`}>
-                  Continue Shopping
-                </Link>
-                <button 
-                  onClick={handleClearCart}
-                  className={`w-full ${theme === 'dark' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-500 text-white hover:bg-red-600'} py-3 mt-4 rounded transition-colors`}
-                  disabled={isUpdating}
-                >
-                  Clear Cart
+                  Clear bag
                 </button>
               </div>
+
+              <div className="lg:col-span-5">
+                <div className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
+                  <h2 className="mb-5 font-display text-display-sm font-extrabold uppercase font-wide">
+                    Summary
+                  </h2>
+
+                  <SummaryRow label="Subtotal" value={formatPrice(subtotal)} />
+                  <SummaryRow
+                    label="Delivery"
+                    value={delivery === 0 ? 'Free' : formatPrice(delivery)}
+                  />
+
+                  {awayFromFreeDelivery > 0 && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Add{' '}
+                      <span className="tnum font-semibold text-foreground">
+                        {formatPrice(awayFromFreeDelivery)}
+                      </span>{' '}
+                      more for free delivery.
+                    </p>
+                  )}
+
+                  <div className="mt-4">
+                    <SummaryRow label="Total" value={formatPrice(total)} strong />
+                  </div>
+
+                  <div className="mt-8 space-y-3">
+                    <Button size="lg" block onClick={() => setCheckoutOpen(true)} disabled={busy}>
+                      Checkout
+                    </Button>
+                    <Button asChild variant="outline" size="lg" block>
+                      <Link to="/products">Continue Shopping</Link>
+                    </Button>
+                  </div>
+
+                  <p className="mt-6 text-center text-micro text-muted-foreground">
+                    Secure M-PESA checkout · Countrywide delivery
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-      <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} theme={theme}>
-        <h2 className="text-2xl font-bold mb-4">Payment Details</h2>
-        <PaymentForm onSuccess={handlePaymentSuccess} cartTotal={total} />
-      </Modal>
+          )}
+        </Container>
+      </main>
+
       <Footer />
+
+      <Dialog
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        title="Checkout"
+        description={`${unitCount} ${unitCount === 1 ? 'item' : 'items'} · ${formatPrice(total)}`}
+      >
+        <PaymentForm
+          onSuccess={handlePaymentSuccess}
+          cartTotal={total}
+          userId={userId}
+          cartItems={items}
+        />
+      </Dialog>
+
+      {/* Clearing the bag is destructive and was previously a single click. */}
+      <Dialog
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        title="Clear Bag?"
+        description="This removes every item. It cannot be undone."
+      >
+        <div className="flex gap-3">
+          <Button variant="outline" block onClick={() => setConfirmClear(false)}>
+            Keep Items
+          </Button>
+          <Button
+            variant="destructive"
+            block
+            onClick={() => {
+              dispatch(clearCart({ userId }));
+              setConfirmClear(false);
+            }}
+          >
+            Clear Bag
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 };

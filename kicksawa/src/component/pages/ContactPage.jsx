@@ -1,152 +1,148 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Mail, Phone, MapPin } from 'lucide-react';
-import Footer from '../components/Footer';
+import { useState } from 'react';
+import { Clock, Mail, MapPin, Phone, Loader2 } from 'lucide-react';
+
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Footer from '../components/Footer';
+import { Container, Section, SectionHeader } from '@/components/ui/layout';
+import { Button } from '@/components/ui/button';
+import { Field, FormMessage, Input, Textarea } from '@/components/ui/field';
 import { publicRequest } from '@/service/requestMethods';
 
-const ContactPage = () => {
-  const { theme } = useTheme();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
+const DETAILS = [
+  { icon: Mail, label: 'Email', value: 'hello@kicksawa.co.ke', href: 'mailto:hello@kicksawa.co.ke' },
+  { icon: Phone, label: 'Phone', value: '+254 700 000 000', href: 'tel:+254700000000' },
+  { icon: MapPin, label: 'Store', value: 'Nairobi, Kenya' },
+  { icon: Clock, label: 'Hours', value: 'Mon–Sat, 9:00–18:00' },
+];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+const ContactPage = () => {
+  const [values, setValues] = useState({ name: '', email: '', subject: '', message: '' });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [status, setStatus] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const set = (key) => (event) => {
+    setValues((prev) => ({ ...prev, [key]: event.target.value }));
+    setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus(null);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setStatus(null);
 
+    const errors = {};
+    if (values.name.trim().length < 2) errors.name = 'Please tell us your name.';
+    if (!/^\S+@\S+\.\S+$/.test(values.email)) errors.email = 'Enter a valid email address.';
+    if (values.message.trim().length < 10) errors.message = 'Add a little more detail.';
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setIsSubmitting(true);
     try {
-      const response = await publicRequest.post('contact', formData);
-      console.log('Form submitted successfully:', response.data);
-      setSubmitStatus({ type: 'success', message: 'Your message has been sent successfully!' });
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setSubmitStatus({ type: 'error', message: 'An error occurred. Please try again later.' });
+      await publicRequest.post('contact', values);
+      setStatus({ tone: 'success', message: 'Thanks — your message is on its way. We reply within one working day.' });
+      setValues({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      console.error('Contact form failed', err);
+      setStatus({ tone: 'error', message: 'We could not send that. Please try again, or email us directly.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-center mb-12">Contact Us</h1>
-        
-        {submitStatus && (
-          <Alert className={`mb-6 ${submitStatus.type === 'success' ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400'}`}>
-            <AlertTitle>{submitStatus.type === 'success' ? 'Success!' : 'Error'}</AlertTitle>
-            <AlertDescription>{submitStatus.message}</AlertDescription>
-          </Alert>
-        )}
 
-        <div className="flex flex-col md:flex-row gap-12">
-          {/* Contact Form */}
-          <div className="md:w-2/3">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block mb-2 font-semibold">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block mb-2 font-semibold">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-                />
-              </div>
-              <div>
-                <label htmlFor="subject" className="block mb-2 font-semibold">Subject</label>
-                <input
-                  type="text"
-                  id="subject"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  required
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-                />
-              </div>
-              <div>
-                <label htmlFor="message" className="block mb-2 font-semibold">Message</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                  rows="5"
-                  className={`w-full px-4 py-2 border rounded ${theme === 'dark' ? 'bg-[#130d14] border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-                ></textarea>
-              </div>
-              <button 
-                type="submit" 
-                className={`${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'} py-3 px-6 rounded transition-colors`}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Sending...' : 'Send Message'}
-              </button>
-            </form>
-          </div>
+      <main id="main" className="flex-1">
+        <Section padding="md">
+          <Container width="default">
+            <SectionHeader
+              as="h1"
+              eyebrow="Get in touch"
+              title="Contact Us"
+              description="Questions about sizing, an order, or a drop? We are happy to help."
+            />
 
-          {/* Contact Information */}
-          <div className="md:w-1/3 space-y-8">
-            <div>
-              <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
-              <ul className="space-y-4">
-                <li className="flex items-center">
-                  <Mail className="w-5 h-5 mr-4" />
-                  <span>info@labelsafi.com</span>
-                </li>
-                <li className="flex items-center">
-                  <Phone className="w-5 h-5 mr-4" />
-                  <span>+254 712346789</span>
-                </li>
-                <li className="flex items-center">
-                  <MapPin className="w-5 h-5 mr-4" />
-                  <span>Nairobi, City, Kenya</span>
-                </li>
-              </ul>
+            <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+              <div className="lg:col-span-7">
+                <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                  {status && <FormMessage tone={status.tone}>{status.message}</FormMessage>}
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Name" error={fieldErrors.name}>
+                      {({ id, invalid, describedBy }) => (
+                        <Input id={id} describedBy={describedBy} autoComplete="name" required invalid={invalid}
+                          value={values.name} onChange={set('name')} placeholder="Your name" />
+                      )}
+                    </Field>
+
+                    <Field label="Email" error={fieldErrors.email}>
+                      {({ id, invalid, describedBy }) => (
+                        <Input id={id} describedBy={describedBy} type="email" autoComplete="email" required invalid={invalid}
+                          value={values.email} onChange={set('email')} placeholder="you@example.com" />
+                      )}
+                    </Field>
+                  </div>
+
+                  <Field label="Subject">
+                    {({ id, describedBy }) => (
+                      <Input id={id} describedBy={describedBy} value={values.subject} onChange={set('subject')}
+                        placeholder="What is this about?" />
+                    )}
+                  </Field>
+
+                  <Field label="Message" error={fieldErrors.message}>
+                    {({ id, invalid, describedBy }) => (
+                      <Textarea id={id} describedBy={describedBy} rows={6} required invalid={invalid}
+                        value={values.message} onChange={set('message')}
+                        placeholder="Tell us what you need." />
+                    )}
+                  </Field>
+
+                  <Button type="submit" size="lg" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />}
+                    {isSubmitting ? 'Sending…' : 'Send Message'}
+                  </Button>
+                </form>
+              </div>
+
+              <aside className="lg:col-span-5">
+                <div className="bg-surface p-8">
+                  <h2 className="text-eyebrow font-bold uppercase text-muted-foreground">
+                    Reach us directly
+                  </h2>
+
+                  <ul className="mt-6 space-y-6">
+                    {DETAILS.map((detail) => {
+                      const Icon = detail.icon;
+                      return (
+                        <li key={detail.label} className="flex gap-4">
+                          <Icon className="h-5 w-5 shrink-0 translate-y-0.5 text-muted-foreground" strokeWidth={1.75} />
+                          <div>
+                            <p className="text-micro uppercase text-muted-foreground">{detail.label}</p>
+                            {detail.href ? (
+                              <a
+                                href={detail.href}
+                                className="text-[0.9375rem] font-semibold underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-foreground"
+                              >
+                                {detail.value}
+                              </a>
+                            ) : (
+                              <p className="text-[0.9375rem] font-semibold">{detail.value}</p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </aside>
             </div>
-            <div>
-              <h2 className="text-2xl font-semibold mb-4">Business Hours</h2>
-              <p>Monday - Friday: 9am - 6pm</p>
-              <p>Saturday: 10am - 4pm</p>
-              <p>Sunday: Closed</p>
-            </div>
-          </div>
-        </div>
-      </div>
+          </Container>
+        </Section>
+      </main>
+
       <Footer />
     </div>
   );
