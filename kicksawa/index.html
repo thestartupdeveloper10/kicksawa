@@ -1,11 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./src//assets/imgs/new.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>KICKSAWA — Sneakers & Streetwear</title>
+    <meta name="description" content="KICKSAWA. Authentic sneakers and streetwear, delivered across Kenya. Nike, Adidas, Puma, New Balance and more." />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Paint the correct theme before React mounts. Without this the page flashes
+      light for a frame on every load for dark-mode users.
+    -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+          var r = document.documentElement;
+          r.classList.toggle('dark', t === 'dark');
+          r.setAttribute('data-theme', t);
+          r.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,400..900&display=swap"
+      rel="stylesheet"
+    />
+
     <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/grid.js"></script>
-    <title>LabelSafi</title>
   </head>
   <body>
     <div id="root"></div>

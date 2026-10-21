@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .bg { fill: #0a0a0a; }
+    .fg { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #fafafa; }
+      .fg { fill: #0a0a0a; }
+    }
+  </style>
+  <rect class="bg" width="64" height="64" rx="12" />
+  <!-- Heavy geometric K, wide stance to echo the expanded display face. -->
+  <path class="fg" d="M14 14h11v14.6L38.2 14H52L35.6 31.4 52.8 50H38.6L25 34.6V50H14V14z" />
+</svg>
