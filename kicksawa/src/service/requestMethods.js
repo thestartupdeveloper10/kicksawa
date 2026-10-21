@@ -1,4 +1,6 @@
 import axios from "axios";
+import { store } from "../redux/Store";
+import { logout } from "../redux/userRedux";
 
 const BASE_URL = "/api/";
 // http://localhost:5000
@@ -37,5 +39,16 @@ userRequest.interceptors.request.use((config) => {
   }
   return config;
 }, (error) => {
+  return Promise.reject(error);
+});
+
+// The token lasts an hour and there is no refresh endpoint, so a 401 here means
+// the session is over. Clearing it lets ProtectedRoute bounce the user to the
+// login page instead of leaving the UI pretending they are still signed in.
+// Login itself goes through publicRequest, so a wrong password never lands here.
+userRequest.interceptors.response.use((response) => response, (error) => {
+  if (error.response?.status === 401) {
+    store.dispatch(logout());
+  }
   return Promise.reject(error);
 });

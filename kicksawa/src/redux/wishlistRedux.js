@@ -9,7 +9,7 @@ const wishlistSlice = createSlice({
   initialState,
   reducers: {
     addProductWishlist: (state, action) => {
-      const { userId } = action.payload;
+      const { userId, product } = action.payload;
       if (!state.wishlists[userId]) {
         state.wishlists[userId] = {
           products: [],
@@ -17,13 +17,13 @@ const wishlistSlice = createSlice({
         };
       }
       state.wishlists[userId].wishQuantity += 1;
-      state.wishlists[userId].products.push(action.payload);
+      state.wishlists[userId].products.push(product);
     },
     removeProductWishlist: (state, action) => {
       const { userId, productId } = action.payload;
       if (state.wishlists[userId]) {
         const productIndex = state.wishlists[userId].products.findIndex(
-          (product) => product.product._id === productId
+          (product) => product._id === productId
         );
         if (productIndex !== -1) {
           state.wishlists[userId].wishQuantity -= 1;

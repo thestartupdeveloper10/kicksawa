@@ -1,5 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+// A cart line is one product in one size/colour combination, so the same shoe
+// in two sizes has to occupy two lines rather than merging into one.
+export const cartKeyFor = (product) =>
+  `${product._id}|${product.selectedSize || ''}|${product.selectedColor || ''}`;
+
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
@@ -12,20 +17,21 @@ const cartSlice = createSlice({
         state.carts[userId] = { products: {}, quantity: 0, total: 0 };
       }
       const userCart = state.carts[userId];
-      if (userCart.products[product._id]) {
-        userCart.products[product._id].quantity += product.quantity;
+      const cartKey = cartKeyFor(product);
+      if (userCart.products[cartKey]) {
+        userCart.products[cartKey].quantity += product.quantity;
       } else {
-        userCart.products[product._id] = { ...product };
+        userCart.products[cartKey] = { ...product, cartKey };
       }
       userCart.quantity += product.quantity;
       userCart.total += product.price * product.quantity;
       console.log('Updated cart state:', state);
     },
     updateProductQuantity: (state, action) => {
-      const { userId, productId, quantity } = action.payload;
+      const { userId, cartKey, quantity } = action.payload;
       const userCart = state.carts[userId];
-      if (userCart && userCart.products[productId]) {
-        const product = userCart.products[productId];
+      if (userCart && userCart.products[cartKey]) {
+        const product = userCart.products[cartKey];
         const quantityDiff = quantity - product.quantity;
         product.quantity = quantity;
         userCart.quantity += quantityDiff;
@@ -34,13 +40,13 @@ const cartSlice = createSlice({
       console.log('Updated cart state:', state);
     },
     removeProduct: (state, action) => {
-      const { userId, productId } = action.payload;
+      const { userId, cartKey } = action.payload;
       const userCart = state.carts[userId];
-      if (userCart && userCart.products[productId]) {
-        const product = userCart.products[productId];
+      if (userCart && userCart.products[cartKey]) {
+        const product = userCart.products[cartKey];
         userCart.quantity -= product.quantity;
         userCart.total -= product.price * product.quantity;
-        delete userCart.products[productId];
+        delete userCart.products[cartKey];
       }
     },
     clearCart: (state, action) => {
