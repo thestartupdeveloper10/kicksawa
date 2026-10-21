@@ -13,10 +13,9 @@ const getAccessToken = async () => {
   };
   
   // Function to generate password for STK push
-  const generatePassword = () => {
+  const generatePassword = (timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3)) => {
     const shortcode = process.env.SHORTCODE;
     const passkey = process.env.PASSKEY;
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
     return Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
   };
   
@@ -55,6 +54,42 @@ const getAccessToken = async () => {
     }
   });
   
+  // STK push status query. Lets the client find out whether the customer
+  // actually approved the prompt, without needing a public CallBackURL.
+  mpesaRouter.post('/payment-status', async (req, res) => {
+    try {
+      const { checkoutRequestId } = req.body;
+      const accessToken = await getAccessToken();
+      const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
+
+      const query = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query', {
+        BusinessShortCode: process.env.SHORTCODE,
+        Password: generatePassword(timestamp),
+        Timestamp: timestamp,
+        CheckoutRequestID: checkoutRequestId,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      const resultCode = String(query.data.ResultCode);
+      res.json({
+        status: resultCode === '0' ? 'success' : 'failed',
+        resultCode,
+        resultDesc: query.data.ResultDesc,
+      });
+    } catch (error) {
+      // Safaricom answers with this code while the customer has not yet
+      // responded to the prompt on their handset.
+      if (error.response && error.response.data && error.response.data.errorCode === '500.001.1001') {
+        return res.json({ status: 'pending' });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred', details: error.response ? error.response.data : error.message });
+    }
+  });
+
   // QR code generation endpoint
   mpesaRouter.post('/generate-qr', async (req, res) => {
     try {

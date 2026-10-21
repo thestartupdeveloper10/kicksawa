@@ -1,4 +1,5 @@
 const config = require('./utils/config');
+const path = require('path');
 const express = require('express');
 require('express-async-errors');
 const app = express();
@@ -40,6 +41,16 @@ app.use('/api/products', productRouter);
 app.use('/api/carts', cartRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/checkout', mpesaRouter);
+
+// Every non-API path is a client-side route, so hand back the SPA shell instead
+// of falling through to unknownEndpoint. Without this, refreshing or sharing a
+// deep link such as /products returns a 404.
+app.get('*', (request, response, next) => {
+  if (request.path.startsWith('/api/')) {
+    return next();
+  }
+  response.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+});
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
