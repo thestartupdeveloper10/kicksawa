@@ -1,99 +1,63 @@
-/* eslint-disable react/prop-types */
-import { Heart, ShoppingBag, X } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
+import { useSelector } from 'react-redux';
+
 import Navbar from '../components/Navbar';
-import { useTheme } from '../components/ThemeContext';
-import { removeProductWishlist } from '../../redux/wishlistRedux';
-import { addProduct } from '../../redux/cartRedux';
+import Footer from '../components/Footer';
+import ProductGrid from '../components/ProductGrid';
+import { Container } from '@/components/ui/layout';
+import { Button } from '@/components/ui/button';
 
-const FavoriteItem = ({ item, onRemove,theme }) => (
-  <div className={`flex items-center px-2 py-4 border-b ${theme === 'dark' ? 'bg-[#130d14]' : 'border-gray-200 bg-gray-200'}`}>
-    <img src={item.product.img[0]} alt={item.product.title} className="w-20 h-20 object-cover mr-4" />
-    <div className="flex-grow">
-      <h3 className="font-semibold">{item.product.title}</h3>
-      <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>{item.product.brand}</p>
-      <p className="font-bold">Ksh: {item.product.price.toFixed(2)}</p>
-    </div>
-    <div className="flex items-center space-x-2">
-    <Link to={`/product/${item.product._id}`}>
-      <button
-       onClick={() => onRemove(item.product._id)}
-        className={`p-2 rounded ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
-      >
-        <ShoppingBag size={20} />
-      </button>
-      </Link>
-      <button
-        onClick={() => onRemove(item.product._id)}
-        className="p-2 text-red-500 hover:text-red-700"
-      >
-        <X size={20} />
-      </button>
-    </div>
-  </div>
-);
-
+/**
+ * Favourites renders the same tile as every other grid on the site. The old
+ * page had its own horizontal row component, so a saved item looked nothing
+ * like the card it was saved from.
+ *
+ * Removal is handled by the card's own heart control rather than a separate X,
+ * which keeps one interaction for the same action everywhere.
+ */
 const FavoritesPage = () => {
-  const { theme } = useTheme();
-  const dispatch = useDispatch();
-  const user = useSelector(state => state.user.currentUser);
-  const wishlist = useSelector(state => state.wishlist);
-
-  
+  const user = useSelector((state) => state.user.currentUser);
+  const wishlist = useSelector((state) => state.wishlist);
 
   const userId = user?.id;
-  const userWishlist = wishlist.wishlists[userId] || { products: [] };
-  const favorites = userWishlist.products;
-
-
-  const removeFromFavorites = (productId) => {
-    dispatch(removeProductWishlist({ userId, productId }));
-  };
-
-  const addToCart = (item) => {
-    console.log('Adding to cart:', item);
-    dispatch(addProduct({ userId, product: { ...item, quantity: 1 } }));
-    removeFromFavorites(item._id);
-    console.log('item id',item._id)
-  };
+  const favorites = wishlist.wishlists[userId]?.products ?? [];
 
   return (
-    <div className={`${theme === 'dark' ? ' text-white' : 'bg-white text-black'} min-h-screen transition-colors duration-300`}>
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl justify-center font-bold mb-8 flex items-center">
-          <Heart className={`mr-2 ${theme === 'dark' ? 'text-red-400' : 'text-red-500'}`} /> Your Favorites
-        </h1>
-        {favorites.length === 0 ? (
-          <p className={`text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>You haven't added any favorites yet.</p>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {favorites.map(item => (
-             
-              <FavoriteItem
-                key={item._id}
-                item={item}
-                onRemove={removeFromFavorites}
-                onAddToCart={addToCart}
-                theme={theme}
-              />
-              // console.log("items are:",item.product.img[0])
-            ))}
-          </div>
-        )}
-        {favorites.length > 0 && (
-          <div className="mt-8 text-center">
-            <Link
-              to="/products"
-              className={`px-6 py-3 rounded ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}`}
-            >
-              Continue Shopping
-            </Link>
-          </div>
-        )}
-      </div>
+
+      <main id="main" className="flex-1">
+        <Container className="pb-24 pt-10">
+          <h1 className="font-display text-display-md font-extrabold uppercase font-wide">
+            Favourites{' '}
+            {favorites.length > 0 && (
+              <span className="tnum text-muted-foreground">({favorites.length})</span>
+            )}
+          </h1>
+
+          {favorites.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="font-display text-display-sm font-extrabold uppercase font-wide">
+                Nothing Saved Yet
+              </p>
+              <p className="mt-2 text-muted-foreground">
+                Tap the heart on any product to keep it here.
+              </p>
+              <Button asChild size="lg" className="mt-8">
+                <Link to="/products">Browse Products</Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <p className="mb-8 mt-2 text-sm text-muted-foreground">
+                Saved items are kept to your account.
+              </p>
+              <ProductGrid products={favorites} />
+            </>
+          )}
+        </Container>
+      </main>
+
       <Footer />
     </div>
   );
