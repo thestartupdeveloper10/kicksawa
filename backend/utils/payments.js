@@ -1,4 +1,5 @@
 const Order = require('../models/order');
+const User = require('../models/user');
 const mpesa = require('./mpesa');
 const logger = require('./logger');
 
@@ -10,6 +11,22 @@ const logger = require('./logger');
  * result: { status: 'success' | 'failed', resultCode, resultDesc,
  *           receipt?, paidAmount?, paidPhone? }
  */
+// What a profile holds when the customer never gave a number.
+const NO_PHONE = [null, '', 'Not Provided'];
+
+/**
+ * A number that has just completed a payment is one the customer uses, so
+ * give it to a profile that has none. Never replaces a number they chose.
+ */
+const rememberPhone = async (order) => {
+  const msisdn = order.payment?.phone;
+  if (!msisdn) return;
+  await User.updateOne(
+    { _id: order.userId, phone: { $in: NO_PHONE } },
+    { $set: { phone: `0${msisdn.slice(3)}` } }
+  );
+};
+
 const settlePayment = async (order, result) => {
   const outcome = {
     'payment.resultCode': result.resultCode,
@@ -68,6 +85,14 @@ const settlePayment = async (order, result) => {
   );
   if (settled.modifiedCount === 0 && Object.keys(receipt).length > 0) {
     await Order.updateOne({ _id: order._id }, { $set: receipt });
+  }
+  if (settled.modifiedCount > 0) {
+    try {
+      await rememberPhone(order);
+    } catch (error) {
+      // The payment is recorded; a profile that stays blank is no reason to fail it.
+      logger.error(`Could not save phone for user ${order.userId}:`, error.message);
+    }
   }
 };
 

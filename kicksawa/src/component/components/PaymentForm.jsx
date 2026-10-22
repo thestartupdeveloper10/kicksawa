@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Loader2, Smartphone } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/products';
 import { userRequest } from '@/service/requestMethods';
+import { updateUser } from '@/redux/userRedux';
 import { cn } from '@/lib/utils';
 
 const POLL_INTERVAL_MS = 3000;
@@ -70,10 +71,14 @@ const normalizePhone = (input) => {
   return null;
 };
 
-/** A saved profile number, shown the way people write it: 0712 345 678. */
+/**
+ * A saved profile number, shown the way people write it: 0712 345 678.
+ * Anything else on the profile (including its 'Not Provided' default) gives
+ * an empty field rather than text that would fail validation.
+ */
 const displayPhone = (input) => {
   const msisdn = normalizePhone(input);
-  if (!msisdn) return input ? String(input) : '';
+  if (!msisdn) return '';
   const local = `0${msisdn.slice(3)}`;
   return `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
 };
@@ -104,7 +109,9 @@ const inputClass = (invalid) =>
 
 function PaymentForm({ onSuccess, cartTotal, cartItems }) {
   // Start from the number on their profile so most customers only confirm it.
-  const savedPhone = useSelector((state) => state.user.currentUser?.phone);
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.user.currentUser);
+  const savedPhone = currentUser?.phone;
   const [phoneNumber, setPhoneNumber] = useState(() => displayPhone(savedPhone));
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -181,6 +188,11 @@ function PaymentForm({ onSuccess, cartTotal, cartItems }) {
 
       if (result.paymentStatus === 'paid') {
         setAttempt(null);
+        // The server saves a paying number to a profile that had none; mirror
+        // that locally so the next checkout is prefilled without a re-login.
+        if ([undefined, null, '', 'Not Provided'].includes(savedPhone)) {
+          dispatch(updateUser({ ...currentUser, phone: `0${msisdn.slice(3)}` }));
+        }
         onSuccess?.({ orderId: order.orderId, amount: result.amount, receipt: result.receipt });
         return;
       }
