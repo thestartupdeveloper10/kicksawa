@@ -13,6 +13,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.2"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
@@ -20,6 +23,7 @@
     "test": "tests"
   },
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
     "build:ui": "rm -rf dist && cd ../kicksawa && npm run build && cp -r dist ../backend",
