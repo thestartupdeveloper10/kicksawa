@@ -70,7 +70,8 @@ productRouter.post("/", verifyTokenAndAdmin, async (req, res) => {
     const savedProduct = await newProduct.save();
     res.status(200).json(savedProduct);
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
@@ -108,7 +109,8 @@ productRouter.put("/:id", verifyTokenAndAdmin, async (req, res) => {
     const updatedProduct = await product.save();
     res.status(200).json(updatedProduct);
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
@@ -119,7 +121,8 @@ productRouter.delete("/:id", verifyTokenAndAdmin, async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
     res.status(200).json("Product has been deleted...");
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
@@ -130,17 +133,22 @@ productRouter.get("/find/:id", async (req, res) => {
     const product = await Product.findById(req.params.id);
     res.status(200).json(product);
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
 //GET ALL PRODUCTS
 
+// Search text is matched literally. Passed straight into a regex, it let a
+// visitor run arbitrary patterns, including ones slow enough to stall the server.
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 productRouter.get("/", async (req, res) => {
   const qNew = req.query.new;
   const qCategory = req.query.category;
   const qBrand = req.query.brand;
-  const qSearch = req.query.search;
+  const qSearch = typeof req.query.search === "string" ? req.query.search.slice(0, 100) : undefined;
 
   try {
     let products;
@@ -156,11 +164,12 @@ productRouter.get("/", async (req, res) => {
     } else if (qBrand) {
       products = await Product.find({ brand: qBrand });
     } else if (qSearch) {
+      const pattern = new RegExp(escapeRegex(qSearch), 'i');
       products = await Product.find({
         $or: [
-          { title: { $regex: qSearch, $options: 'i' } },
-          { brand: { $regex: qSearch, $options: 'i' } },
-          { categories: { $in: [new RegExp(qSearch, 'i')] } }
+          { title: pattern },
+          { brand: pattern },
+          { categories: pattern }
         ]
       });
     } else {
@@ -169,7 +178,8 @@ productRouter.get("/", async (req, res) => {
 
     res.status(200).json(products);
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
