@@ -150,7 +150,8 @@ const UserProfilePage = () => {
     setError(null);
     try {
       const fileRef = ref(storage, `avatars/${currentUser.id}-${Date.now()}-${file.name}`);
-      await uploadBytes(fileRef, file);
+      // Long cache metadata, so the browser keeps the avatar between visits.
+      await uploadBytes(fileRef, file, { cacheControl: 'public, max-age=31536000, immutable', contentType: file.type });
       const imageUrl = await getDownloadURL(fileRef);
       setUser((prev) => ({ ...prev, profilePic: imageUrl }));
     } catch (err) {

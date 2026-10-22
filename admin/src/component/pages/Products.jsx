@@ -8,6 +8,7 @@ import {
 } from '@/components/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ProductImage } from '@/components/ui/product-image';
 import { formatKsh, isTracked, lowSizes, pairsOnHand } from '@/lib/format';
 
 const VIEWS = [
@@ -113,9 +114,9 @@ const Products = () => {
                   <tr key={product._id}>
                     <Td>
                       <Link to={`/products/${product._id}`} className="flex items-center gap-3 hover:opacity-80">
-                        <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-surface">
+                        <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-surface">
                           {product.img?.[0] && (
-                            <img src={product.img[0]} alt="" loading="lazy" className="img-outline h-full w-full object-cover" />
+                            <ProductImage src={product.img[0]} alt="" className="img-outline h-full w-full object-cover transition-opacity duration-[400ms]" />
                           )}
                         </span>
                         <span className="min-w-0">

@@ -10,6 +10,7 @@ import { clearCart, removeProduct, updateProductQuantity } from '../../redux/car
 import { Container } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { ProductImage } from '@/components/ui/product-image';
 import { formatPrice } from '@/lib/products';
 import { FREE_DELIVERY_THRESHOLD, deliveryFeeFor } from '@/lib/site';
 import { cn } from '@/lib/utils';
@@ -23,13 +24,12 @@ const CartLine = ({ item, onUpdateQuantity, onRemove, busy }) => {
     <li className="flex gap-4 border-b border-line py-6 sm:gap-6">
       <Link
         to={`/product/${item._id}`}
-        className="block h-24 w-24 shrink-0 overflow-hidden bg-[#f4f4f4] sm:h-32 sm:w-32"
+        className="relative block h-24 w-24 shrink-0 overflow-hidden bg-[#f4f4f4] sm:h-32 sm:w-32"
       >
-        <img
+        <ProductImage
           src={item.img?.[0]}
           alt={item.title}
-          loading="lazy"
-          className="h-full w-full object-contain p-2 mix-blend-multiply"
+          className="h-full w-full object-contain p-2 mix-blend-multiply transition-opacity duration-[400ms] ease-out-quint"
         />
       </Link>
 

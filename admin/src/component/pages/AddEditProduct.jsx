@@ -7,6 +7,8 @@ import app from '../../services/firebase';
 import { publicRequest, userRequest, apiError } from '../../services/requestMethods';
 import { ErrorNote, LoadingRows, PageHeader, Panel } from '@/components/admin';
 import { Button } from '@/components/ui/button';
+import { ProductImage } from '@/components/ui/product-image';
+import { UPLOAD_METADATA } from '@/lib/image';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
@@ -110,7 +112,9 @@ const AddEditProduct = () => {
         const fileName = new Date().getTime() + file.name;
         const storage = getStorage(app);
         const storageRef = ref(storage, fileName);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        // Long cache metadata, so browsers can keep the photo even when it
+        // is loaded straight from Firebase.
+        const uploadTask = uploadBytesResumable(storageRef, file, { ...UPLOAD_METADATA, contentType: file.type });
 
         uploadTask.on(
           "state_changed",
@@ -246,7 +250,9 @@ const AddEditProduct = () => {
               <div className="mb-4 flex flex-wrap gap-3">
                 {existingImages.map((url, index) => (
                   <div key={url} className="relative">
-                    <img src={url} alt={`Image ${index + 1}`} className="img-outline h-24 w-24 rounded-md bg-surface object-cover" />
+                    <span className="relative block h-24 w-24 overflow-hidden rounded-md bg-surface">
+                      <ProductImage src={url} alt={`Image ${index + 1}`} className="img-outline h-full w-full object-cover transition-opacity duration-[400ms]" />
+                    </span>
                     <button
                       type="button"
                       aria-label={`Remove image ${index + 1}`}

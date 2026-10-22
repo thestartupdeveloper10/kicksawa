@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { ProductImage } from '@/components/ui/product-image';
+import { prefetchImages } from '@/lib/image';
 import { cn } from '@/lib/utils';
 
 /**
@@ -18,6 +20,14 @@ const ProductGallery = ({ images = [], title }) => {
   const scrollerRef = useRef(null);
 
   const shots = images.filter(Boolean);
+
+  // The first shot is already on its way; fetch the rest while the visitor
+  // looks at it, so switching views is instant.
+  const shotsKey = shots.join('|');
+  useEffect(() => {
+    if (shots.length > 1) prefetchImages(shots.slice(1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shotsKey]);
 
   // Track which slide the mobile carousel has settled on.
   useEffect(() => {
@@ -45,13 +55,12 @@ const ProductGallery = ({ images = [], title }) => {
         >
           {shots.map((src, index) => (
             <div key={src} className="w-full shrink-0 snap-center px-5 sm:px-6">
-              <div className="aspect-square overflow-hidden bg-[#f4f4f4]">
-                <img
+              <div className="relative aspect-square overflow-hidden bg-[#f4f4f4]">
+                <ProductImage
                   src={src}
                   alt={`${title} — view ${index + 1}`}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  className="h-full w-full object-contain p-4 mix-blend-multiply"
+                  priority={index === 0}
+                  className="h-full w-full object-contain p-4 mix-blend-multiply transition-opacity duration-[400ms] ease-out-quint"
                 />
               </div>
             </div>
@@ -97,31 +106,29 @@ const ProductGallery = ({ images = [], title }) => {
                 aria-label={`View image ${index + 1}`}
                 aria-current={index === active}
                 className={cn(
-                  'aspect-square overflow-hidden bg-[#f4f4f4] transition-[box-shadow] duration-fast ease-swift',
+                  'relative aspect-square overflow-hidden bg-[#f4f4f4] transition-[box-shadow] duration-fast ease-swift',
                   index === active
                     ? 'shadow-[inset_0_0_0_2px_hsl(var(--foreground))]'
                     : 'hover:shadow-[inset_0_0_0_1px_hsl(var(--foreground)/0.3)]'
                 )}
               >
-                <img
+                <ProductImage
                   src={src}
                   alt=""
                   aria-hidden="true"
-                  loading="lazy"
-                  className="h-full w-full object-contain p-1.5 mix-blend-multiply"
+                  className="h-full w-full object-contain p-1.5 mix-blend-multiply transition-opacity duration-[400ms] ease-out-quint"
                 />
               </button>
             ))}
           </div>
         )}
 
-        <div className="min-w-0 flex-1 overflow-hidden bg-[#f4f4f4]">
-          <img
+        <div className="relative min-w-0 flex-1 overflow-hidden bg-[#f4f4f4]">
+          <ProductImage
             src={shots[active]}
             alt={`${title} — view ${active + 1}`}
-            fetchpriority="high"
-            decoding="async"
-            className="aspect-square w-full object-contain p-8 mix-blend-multiply"
+            priority
+            className="aspect-square w-full object-contain p-8 mix-blend-multiply transition-opacity duration-[400ms] ease-out-quint"
           />
         </div>
       </div>

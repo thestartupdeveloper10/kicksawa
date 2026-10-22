@@ -8,6 +8,7 @@ import {
   Table, Td, Th,
 } from '@/components/admin';
 import { Badge } from '@/components/ui/badge';
+import { imageSrc } from '@/lib/image';
 import { Button } from '@/components/ui/button';
 import {
   createdAtOf, formatDate, formatKsh, orderNumber, paymentStatusOf, realPhone,
@@ -82,7 +83,7 @@ const CustomerDetail = () => {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_2fr]">
         <Panel title="Profile">
           <div className="mb-5 flex items-center gap-4">
-            <img src={user.profilePicture} alt="" className="h-16 w-16 rounded-full bg-surface object-cover" />
+            <img src={imageSrc(user.profilePicture)} alt="" className="h-16 w-16 rounded-full bg-surface object-cover" />
             {user.isAdmin && <Badge variant="solid">Admin</Badge>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">

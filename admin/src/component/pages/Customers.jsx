@@ -6,6 +6,7 @@ import {
   EmptyState, ErrorNote, FilterChips, LoadingRows, PageHeader, Panel, SearchInput, Table, Td, Th,
 } from '@/components/admin';
 import { Badge } from '@/components/ui/badge';
+import { imageSrc } from '@/lib/image';
 import { formatDate, formatKsh, realPhone, spendByUser } from '@/lib/format';
 
 const VIEWS = [
@@ -90,7 +91,7 @@ const Customers = () => {
                   <tr key={u.id}>
                     <Td>
                       <Link to={`/customers/${u.id}`} className="flex items-center gap-3 hover:opacity-80">
-                        <img src={u.profilePicture} alt="" className="h-9 w-9 shrink-0 rounded-full bg-surface object-cover" loading="lazy" />
+                        <img src={imageSrc(u.profilePicture)} alt="" className="h-9 w-9 shrink-0 rounded-full bg-surface object-cover" loading="lazy" />
                         <span className="font-semibold">{u.username}</span>
                         {u.isAdmin && <Badge variant="solid">Admin</Badge>}
                       </Link>

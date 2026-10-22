@@ -6,6 +6,7 @@ import { publicRequest, userRequest, apiError } from '../../services/requestMeth
 import { ConfirmDialog, ErrorNote, LoadingRows, PageHeader, Panel } from '@/components/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ProductImage } from '@/components/ui/product-image';
 import { cn } from '@/lib/utils';
 import { LOW_STOCK, formatKsh, isTracked, pairsOnHand, paymentStatusOf } from '@/lib/format';
 
@@ -141,7 +142,9 @@ const ProductDetail = () => {
         <Panel title="Images" className="mt-6">
           <div className="flex flex-wrap gap-3">
             {product.img.map((src, i) => (
-              <img key={src} src={src} alt={`${product.title}, image ${i + 1}`} className="img-outline h-28 w-28 rounded-md bg-surface object-cover" />
+              <span key={src} className="relative h-28 w-28 overflow-hidden rounded-md bg-surface">
+                <ProductImage src={src} alt={`${product.title}, image ${i + 1}`} className="img-outline h-full w-full object-cover transition-opacity duration-[400ms]" />
+              </span>
             ))}
           </div>
         </Panel>

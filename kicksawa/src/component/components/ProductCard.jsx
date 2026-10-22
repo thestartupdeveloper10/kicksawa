@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 import { Badge } from '@/components/ui/badge';
+import { ProductImage } from '@/components/ui/product-image';
+import { imageSrc } from '@/lib/image';
 import { formatPrice, normalizeColor } from '@/lib/products';
 import { cn } from '@/lib/utils';
 
@@ -78,11 +80,10 @@ const ProductCard = ({ product, className, eager = false, showBrand = true }) =>
       <Link to={`/product/${_id}`} className="flex flex-1 flex-col focus-visible:outline-offset-4">
         <div className="relative isolate aspect-square overflow-hidden bg-[#f4f4f4]">
           {primary && (
-            <img
+            <ProductImage
               src={primary}
               alt={title}
-              loading={eager ? 'eager' : 'lazy'}
-              decoding="async"
+              priority={eager}
               className={cn(
                 'h-full w-full object-contain p-3 mix-blend-multiply sm:p-5',
                 'transition-[opacity,transform] duration-[600ms] ease-out-quint',
@@ -96,7 +97,7 @@ const ProductCard = ({ product, className, eager = false, showBrand = true }) =>
               has an exit as well as an enter. */}
           {secondary && swapArmed && (
             <img
-              src={secondary}
+              src={imageSrc(secondary)}
               alt=""
               aria-hidden="true"
               loading="lazy"
