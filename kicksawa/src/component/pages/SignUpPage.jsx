@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import AuthLayout from '../components/AuthLayout';
 import GoogleAuth from '../components/GoogleAuth';
@@ -12,6 +12,11 @@ const MIN_PASSWORD = 8;
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Carried through to sign-in so a new account still lands back where the
+  // shopper left off.
+  const from = location.state?.from;
+  const returnTo = from ? `${from.pathname}${from.search || ''}` : '/';
 
   const [values, setValues] = useState({
     name: '',
@@ -59,7 +64,7 @@ const SignUpPage = () => {
         email: values.email,
         password: values.password,
       });
-      navigate('/login', { state: { registered: true } });
+      navigate('/login', { state: { registered: true, from } });
     } catch (err) {
       setError(err.response?.data?.error || 'We could not create your account. Please try again.');
     } finally {
@@ -76,6 +81,7 @@ const SignUpPage = () => {
           Already have an account?{' '}
           <Link
             to="/login"
+            state={{ from }}
             className="font-semibold text-foreground underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-foreground"
           >
             Sign in
@@ -180,7 +186,7 @@ const SignUpPage = () => {
         <span className="h-px flex-1 bg-line" />
       </div>
 
-      <GoogleAuth label="Sign up with Google" />
+      <GoogleAuth label="Sign up with Google" returnTo={returnTo} />
     </AuthLayout>
   );
 };

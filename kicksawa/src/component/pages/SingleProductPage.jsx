@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   BadgeCheck,
@@ -16,7 +16,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductGallery from '../components/ProductGallery';
 import ProductRail from '../components/ProductRail';
-import { addProduct } from '../../redux/cartRedux';
+import { GUEST_CART, addProduct } from '../../redux/cartRedux';
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
 import { Container, Section } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
@@ -114,6 +114,7 @@ const ProductDetails = ({ product }) => (
 const SingleProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
 
   const user = useSelector((state) => state.user.currentUser);
@@ -201,9 +202,6 @@ const SingleProductPage = () => {
   );
 
   const handleAddToCart = () => {
-    // Selections are validated before the sign-in check: sending someone to
-    // log in only for them to come back and discover they still have to pick a
-    // size is two interruptions where one will do.
     // Inline validation rather than alert(): a native dialog throws away the
     // page context and cannot point at the control that needs attention.
     if (sizes.length > 0 && !selectedSize) {
@@ -218,14 +216,12 @@ const SingleProductPage = () => {
 
     setValidation('');
 
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
+    // Guests add to a bag of their own rather than being sent to sign in,
+    // which used to throw away the size and colour they had just picked.
+    // Sign-in happens at the bag, and the guest lines merge in then.
     dispatch(
       addProduct({
-        userId: user.id,
+        userId: user?.id ?? GUEST_CART,
         product: { ...product, quantity, selectedSize, selectedColor },
       })
     );
@@ -237,7 +233,7 @@ const SingleProductPage = () => {
 
   const handleToggleWishlist = () => {
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: location } });
       return;
     }
     if (isInWishlist) {

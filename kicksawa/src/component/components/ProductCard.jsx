@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { addProductWishlist, removeProductWishlist } from '../../redux/wishlistRedux';
@@ -31,6 +31,7 @@ const isRecent = (createdAt) => {
 const ProductCard = ({ product, className, eager = false, showBrand = true }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector((state) => state.user.currentUser);
   const wishlist = useSelector((state) => state.wishlist);
   const [swapFailed, setSwapFailed] = useState(false);
@@ -58,7 +59,7 @@ const ProductCard = ({ product, className, eager = false, showBrand = true }) =>
     event.preventDefault();
     event.stopPropagation();
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: location } });
       return;
     }
     if (isInWishlist) {

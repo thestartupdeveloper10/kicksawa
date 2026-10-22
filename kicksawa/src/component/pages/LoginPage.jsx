@@ -17,7 +17,8 @@ const LoginPage = () => {
 
   const sessionExpired = Boolean(location.state?.expired);
   // Come back to wherever the guard interrupted, rather than always home.
-  const returnTo = location.state?.from?.pathname || '/';
+  const from = location.state?.from;
+  const returnTo = from ? `${from.pathname}${from.search || ''}` : '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,6 +53,7 @@ const LoginPage = () => {
           New here?{' '}
           <Link
             to="/signup"
+            state={{ from }}
             className="font-semibold text-foreground underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-foreground"
           >
             Create an account
@@ -124,7 +126,7 @@ const LoginPage = () => {
         <span className="h-px flex-1 bg-line" />
       </div>
 
-      <GoogleAuth />
+      <GoogleAuth returnTo={returnTo} />
     </AuthLayout>
   );
 };

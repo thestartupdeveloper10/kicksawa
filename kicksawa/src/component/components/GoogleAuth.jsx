@@ -17,7 +17,7 @@ const CANCELLED = new Set([
   'auth/user-cancelled',
 ]);
 
-function GoogleAuth({ label = 'Continue with Google' }) {
+function GoogleAuth({ label = 'Continue with Google', returnTo = '/' }) {
   const auth = getAuth(app);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ function GoogleAuth({ label = 'Continue with Google' }) {
 
       if (res.status === 200) {
         dispatch(loginSuccess(res.data));
-        navigate('/');
+        navigate(returnTo, { replace: true });
         return;
       }
       throw new Error('Unexpected response from sign-in');

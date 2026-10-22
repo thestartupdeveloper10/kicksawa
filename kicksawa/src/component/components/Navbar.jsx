@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { useTheme } from './ThemeContext';
 import { logout } from '../../redux/userRedux';
+import { GUEST_CART } from '../../redux/cartRedux';
 import { BRANDS, NAV, SHOP_LINKS, SITE } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { Container } from '@/components/ui/layout';
@@ -424,7 +425,7 @@ const Navbar = () => {
   const wishlist = useSelector((state) => state.wishlist);
 
   const userId = user?.id;
-  const userCart = cart?.carts?.[userId] || { products: {} };
+  const userCart = cart?.carts?.[userId ?? GUEST_CART] || { products: {} };
   const userWishlist = wishlist?.wishlists?.[userId] || { products: [] };
   const cartItemCount = Object.values(userCart.products).length;
   const wishlistItemCount = userWishlist.products.length;
