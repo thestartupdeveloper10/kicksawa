@@ -1,7 +1,7 @@
 const logger = require('./logger')
 
 // Never echo credentials into the logs.
-const SENSITIVE = new Set(['password', 'confirmPassword', 'token'])
+const SENSITIVE = new Set(['password', 'confirmPassword', 'currentPassword', 'newPassword', 'token', 'idToken'])
 
 const redact = (body) => {
   if (!body || typeof body !== 'object') return body
@@ -13,7 +13,11 @@ const redact = (body) => {
 const requestLogger = (request, response, next) => {
   logger.info('Method:', request.method)
   logger.info('Path:  ', request.path)
-  logger.info('Body:  ', redact(request.body))
+  // Bodies carry names, emails, phone numbers and addresses; keep them out of
+  // production logs entirely.
+  if (process.env.NODE_ENV !== 'production') {
+    logger.info('Body:  ', redact(request.body))
+  }
   logger.info('---')
   next()
 }
