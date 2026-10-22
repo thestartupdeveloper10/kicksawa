@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const { rateLimit } = require("express-rate-limit");
 const Order = require("../models/order");
 const Product = require("../models/product");
+const User = require("../models/user");
+const Contact = require("../models/contact");
 const config = require("../utils/config");
 const mpesa = require("../utils/mpesa");
 const { refreshPayment } = require("../utils/payments");
@@ -360,7 +362,140 @@ orderRouter.get("/", verifyTokenAndAdmin, async (req, res) => {
   }
 });
 
+// Orders that brought money in. Orders from before payments were tracked
+// have no payment record; the old flow only created them once paid.
+const PAID = { $or: [{ "payment.status": "paid" }, { payment: { $exists: false } }] };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LOW_STOCK = 2;
+
+// DASHBOARD SUMMARY
+// Everything the admin dashboard shows, in one round trip.
+
+orderRouter.get("/summary", verifyTokenAndAdmin, async (req, res) => {
+  const now = Date.now();
+  const since = new Date(now - 30 * DAY_MS);
+  const before = new Date(now - 60 * DAY_MS);
+
+  const [revenueByDay, windows, toShip, awaiting, review, customers, newCustomers, stock, unhandledMessages] =
+    await Promise.all([
+      Order.aggregate([
+        { $match: { ...PAID, createdAt: { $gte: since } } },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: { $ifNull: ["$payment.paidAt", "$createdAt"] },
+                timezone: "Africa/Nairobi",
+              },
+            },
+            revenue: { $sum: "$amount" },
+            orders: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      Order.aggregate([
+        { $match: { ...PAID, createdAt: { $gte: before } } },
+        {
+          $group: {
+            _id: { $cond: [{ $gte: ["$createdAt", since] }, "current", "previous"] },
+            revenue: { $sum: "$amount" },
+            orders: { $sum: 1 },
+          },
+        },
+      ]),
+      Order.countDocuments({ ...PAID, status: { $in: ["pending", "processing"] } }),
+      Order.countDocuments({ "payment.status": "awaiting" }),
+      Order.countDocuments({ "payment.status": "review" }),
+      User.countDocuments({ isAdmin: { $ne: true } }),
+      User.countDocuments({ isAdmin: { $ne: true }, createdAt: { $gte: since } }),
+      Product.aggregate([
+        { $unwind: "$stock" },
+        {
+          $group: {
+            _id: null,
+            lowSizes: { $sum: { $cond: [{ $and: [{ $gt: ["$stock.quantity", 0] }, { $lte: ["$stock.quantity", LOW_STOCK] }] }, 1, 0] } },
+            soldOutSizes: { $sum: { $cond: [{ $eq: ["$stock.quantity", 0] }, 1, 0] } },
+            pairs: { $sum: "$stock.quantity" },
+          },
+        },
+      ]),
+      Contact.countDocuments({ handled: { $ne: true } }),
+    ]);
+
+  const window = (id) => windows.find((w) => w._id === id) || { revenue: 0, orders: 0 };
+  res.json({
+    revenueByDay: revenueByDay.map((d) => ({ date: d._id, revenue: d.revenue, orders: d.orders })),
+    revenue30: window("current").revenue,
+    orders30: window("current").orders,
+    revenuePrev30: window("previous").revenue,
+    toShip,
+    awaitingPayment: awaiting,
+    needsReview: review,
+    customers,
+    newCustomers30: newCustomers,
+    lowStockSizes: stock[0]?.lowSizes ?? 0,
+    soldOutSizes: stock[0]?.soldOutSizes ?? 0,
+    pairsOnHand: stock[0]?.pairs ?? 0,
+    unhandledMessages,
+    lowStockThreshold: LOW_STOCK,
+  });
+});
+
+// RESOLVE A PAYMENT REVIEW
+// 'review' means money arrived but something did not line up (short
+// payment, or paid after the pairs had sold). A person decides: treat it as
+// paid and fulfil, or record that the money was returned.
+
+orderRouter.post("/:id/resolve-review", verifyTokenAndAdmin, async (req, res) => {
+  const { resolution, note } = req.body;
+  if (!["paid", "refunded"].includes(resolution)) {
+    return res.status(400).json({ error: "Choose whether to mark this paid or refunded." });
+  }
+  if (note !== undefined && (typeof note !== "string" || note.length > 500)) {
+    return res.status(400).json({ error: "Notes are limited to 500 characters." });
+  }
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "Order not found." });
+  }
+
+  const review = {
+    "payment.review": { resolution, note: note?.trim() || undefined, by: req.user.id, at: new Date() },
+  };
+  const changes = resolution === "paid"
+    ? { "payment.status": "paid", "payment.paidAt": new Date(), status: "processing" }
+    : { "payment.status": "refunded", status: "cancelled" };
+
+  // Conditional on still being in review, so two admins cannot both resolve it.
+  const order = await Order.findOneAndUpdate(
+    { _id: req.params.id, "payment.status": "review" },
+    { $set: { ...changes, ...review } },
+    { new: true }
+  );
+  if (!order) {
+    const exists = await Order.exists({ _id: req.params.id });
+    return exists
+      ? res.status(409).json({ error: "This order is not awaiting review." })
+      : res.status(404).json({ error: "Order not found." });
+  }
+
+  let warning;
+  if (resolution === "paid") {
+    // Paid after its pairs were released: take them back if they are still here.
+    if (!(await inventory.reholdOrderStock(order))) {
+      warning = "Some items have sold out since. Restock them or contact the customer before shipping.";
+    }
+  } else {
+    await inventory.releaseOrderStock(order);
+  }
+
+  res.json({ order: await Order.findById(order._id), warning });
+});
+
 // GET MONTHLY INCOME
+// Paid orders only; unpaid and failed checkouts are not income.
 
 orderRouter.get("/income", verifyTokenAndAdmin, async (req, res) => {
   const productId = req.query.pid;
@@ -372,6 +507,7 @@ orderRouter.get("/income", verifyTokenAndAdmin, async (req, res) => {
     const income = await Order.aggregate([
       {
         $match: {
+          ...PAID,
           createdAt: { $gte: previousMonth },
           ...(productId && {
             products: { $elemMatch: { productId } },

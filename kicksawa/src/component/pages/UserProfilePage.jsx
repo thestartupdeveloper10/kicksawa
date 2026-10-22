@@ -37,6 +37,7 @@ const STATUS_VARIANT = {
 const PAYMENT_LABEL = {
   awaiting: { label: 'awaiting payment', variant: 'outline' },
   review: { label: 'payment under review', variant: 'brand' },
+  refunded: { label: 'refunded', variant: 'neutral' },
 };
 
 const OrderRow = ({ order }) => {

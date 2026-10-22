@@ -19,6 +19,11 @@ const ContactSchema = new Schema({
         type: String,
         required: true
     },
-});
+    // Set by an admin once the message has been dealt with.
+    handled: {
+        type: Boolean,
+        default: false
+    },
+}, { timestamps: true });
 
 module.exports = mongoose.model("Contact", ContactSchema);

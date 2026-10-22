@@ -1,5 +1,35 @@
 const mongoose = require("mongoose");
 
+const PaymentSchema = new mongoose.Schema(
+  {
+    method: { type: String, default: "mpesa" },
+    status: {
+      type: String,
+      // review: money arrived but did not match the order; needs a person.
+      // refunded: an admin resolved a review by returning the money.
+      enum: ["awaiting", "paid", "failed", "review", "refunded"],
+      default: "awaiting",
+    },
+    phone: { type: String },
+    checkoutRequestId: { type: String, index: true },
+    resultCode: { type: String },
+    resultDesc: { type: String },
+    // From Safaricom's callback; what reconciliation and refunds go by.
+    receipt: { type: String },
+    paidAmount: { type: Number },
+    paidPhone: { type: String },
+    paidAt: { type: Date },
+    // How an admin settled a 'review' payment, and who did it.
+    review: {
+      resolution: { type: String, enum: ["paid", "refunded"] },
+      note: { type: String },
+      by: { type: String },
+      at: { type: Date },
+    },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true },
@@ -45,25 +75,10 @@ const OrderSchema = new mongoose.Schema(
     // Fulfilment: pending -> processing -> shipped -> delivered, or cancelled.
     status: { type: String, default: "pending" },
     // Money, tracked apart from fulfilment so an unpaid order is never
-    // mistaken for one waiting to ship.
-    payment: {
-      method: { type: String, default: "mpesa" },
-      status: {
-        type: String,
-        // review: money arrived but did not match the order; needs a person.
-        enum: ["awaiting", "paid", "failed", "review"],
-        default: "awaiting",
-      },
-      phone: { type: String },
-      checkoutRequestId: { type: String, index: true },
-      resultCode: { type: String },
-      resultDesc: { type: String },
-      // From Safaricom's callback; what reconciliation and refunds go by.
-      receipt: { type: String },
-      paidAmount: { type: Number },
-      paidPhone: { type: String },
-      paidAt: { type: Date },
-    },
+    // mistaken for one waiting to ship. A sub-document rather than a nested
+    // object so an order without one (placed before payments were tracked)
+    // stays without one: nested defaults would report it as 'awaiting'.
+    payment: { type: PaymentSchema, default: undefined },
   },
   { timestamps: true }
 );

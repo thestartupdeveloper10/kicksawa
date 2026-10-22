@@ -73,6 +73,16 @@ usersRouter.put("/:id", verifyTokenAndAuthorization, async (req, res) => {
 //DELETE
 
 usersRouter.delete("/:id", verifyTokenAndAuthorization, async (req, res) => {
+  // Admin accounts are not removable from here, by anyone, including the
+  // admin themselves: losing the last admin would lock everyone out of the
+  // panel. Customers' orders are kept for the shop's records.
+  const target = await User.findById(req.params.id);
+  if (!target) {
+    return res.status(404).json({ error: "User not found." });
+  }
+  if (target.isAdmin) {
+    return res.status(403).json({ error: "Admin accounts can't be deleted here." });
+  }
   try {
     await User.findByIdAndDelete(req.params.id);
     res.status(200).json("User has been deleted...");
