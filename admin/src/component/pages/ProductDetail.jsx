@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { getProduct, deleteProduct } from "../../redux/apiCalls";
+import { useDispatch } from 'react-redux';
+import { deleteProduct } from "../../redux/apiCalls";
+import { publicRequest } from "../../services/requestMethods";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,19 +11,36 @@ const ProductDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const product = useSelector((state) => state.product.currentProduct);
-  console.log(product)
+  const [product, setProduct] = useState(null);
+  const [error, setError] = useState('');
 
+  // Loaded here rather than through the store: the store has no slot for a
+  // single product, and the old call hit a route that does not exist.
   useEffect(() => {
-    getProduct(id, dispatch);
-  }, [id, dispatch]);
+    let cancelled = false;
+    publicRequest
+      .get(`/products/find/${id}`)
+      .then(({ data }) => {
+        if (!cancelled) setProduct(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load product', err);
+        if (!cancelled) setError('Could not load this product.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleDelete = () => {
-    deleteProduct(id, dispatch);
+    dispatch(deleteProduct(id));
     navigate('/products');
   };
 
+  if (error) return <div className="text-center text-red-600 dark:text-red-400">{error}</div>;
   if (!product) return <div className="text-center text-gray-700 dark:text-gray-300">Loading...</div>;
+
+  const tracked = Array.isArray(product.stock) && product.stock.length > 0;
 
   return (
     <div className="space-y-6">
@@ -41,13 +59,30 @@ const ProductDetail = () => {
             <div className="space-y-2">
               <div>
                 <span className="text-gray-700 dark:text-gray-300 font-semibold">Price:</span>
-                <span className="ml-2 text-green-600 dark:text-green-400">${product.price.toFixed(2)}</span>
+                <span className="ml-2 text-green-600 dark:text-green-400">Ksh {Number(product.price).toLocaleString('en-KE')}</span>
               </div>
               <div>
                 <span className="text-gray-700 dark:text-gray-300 font-semibold">Stock Status:</span>
                 <Badge className={`ml-2 ${product.inStock ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'}`}>
                   {product.inStock ? 'In Stock' : 'Out of Stock'}
                 </Badge>
+              </div>
+              <div>
+                <span className="text-gray-700 dark:text-gray-300 font-semibold">Stock:</span>
+                {tracked ? (
+                  <ul className="mt-1 grid grid-cols-3 gap-1 text-sm sm:grid-cols-4">
+                    {product.stock.map((entry) => (
+                      <li
+                        key={entry.size || 'one-size'}
+                        className={entry.quantity <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}
+                      >
+                        {entry.size ? `${entry.size}: ` : ''}{entry.quantity}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="ml-2 text-gray-600 dark:text-gray-400">Not tracked</span>
+                )}
               </div>
               <div>
                 <span className="text-gray-700 dark:text-gray-300 font-semibold">Categories:</span>
