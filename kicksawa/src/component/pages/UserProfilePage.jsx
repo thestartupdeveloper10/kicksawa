@@ -33,8 +33,15 @@ const STATUS_VARIANT = {
   cancelled: 'brand',
 };
 
+/** Until it is paid, an order's payment is its status; after that, shipping is. */
+const PAYMENT_LABEL = {
+  awaiting: { label: 'awaiting payment', variant: 'outline' },
+  review: { label: 'payment under review', variant: 'brand' },
+};
+
 const OrderRow = ({ order }) => {
   const status = String(order.status || 'pending').toLowerCase();
+  const payment = PAYMENT_LABEL[order.payment?.status];
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line py-4">
       <div className="min-w-0">
@@ -50,7 +57,11 @@ const OrderRow = ({ order }) => {
         </p>
       </div>
       <div className="flex items-center gap-5">
-        <Badge variant={STATUS_VARIANT[status] ?? 'neutral'}>{status}</Badge>
+        {payment ? (
+          <Badge variant={payment.variant}>{payment.label}</Badge>
+        ) : (
+          <Badge variant={STATUS_VARIANT[status] ?? 'neutral'}>{status}</Badge>
+        )}
         <span className="tnum text-[0.9375rem] font-semibold">{formatPrice(order.amount)}</span>
       </div>
     </li>
@@ -79,7 +90,12 @@ const UserProfilePage = () => {
     const load = async () => {
       try {
         const { data } = await userRequest.get(`orders/find/${currentUser.id}`);
-        if (!cancelled) setOrders(Array.isArray(data) ? data : []);
+        // A failed payment never became an order the customer has; showing
+        // it would read as something they bought.
+        const placed = (Array.isArray(data) ? data : []).filter(
+          (order) => order.payment?.status !== 'failed'
+        );
+        if (!cancelled) setOrders(placed);
       } catch (err) {
         console.error('Failed to load orders', err);
         if (!cancelled) setOrdersError('We could not load your orders right now.');
