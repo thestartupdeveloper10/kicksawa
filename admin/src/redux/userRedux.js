@@ -10,15 +10,15 @@ const userSlice = createSlice({
   reducers: {
     loginStart: (state) => {
       state.isFetching = true;
+      state.error = false;
     },
     loginSuccess: (state, action) => {
       state.isFetching = false;
       state.currentUser = action.payload;
-      console.log(state.currentUser)
     },
-    loginFailure: (state) => {
+    loginFailure: (state, action) => {
       state.isFetching = false;
-      state.error = true;
+      state.error = action.payload || 'Invalid email or password.';
     },
     logout: (state) => {
       state.currentUser = null;
@@ -26,5 +26,18 @@ const userSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure } = userSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, logout } = userSlice.actions;
+
+/** Signed in as an admin with a token that has not expired. */
+export const isAdminSession = (user) => {
+  if (!user?.isAdmin || !user.token) return false;
+  try {
+    const base64 = user.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const { exp } = JSON.parse(atob(padded));
+    return typeof exp === 'number' && exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
 export default userSlice.reducer;

@@ -1,4 +1,6 @@
 import axios from "axios";
+import { store } from "../redux/store";
+import { logout } from "../redux/userRedux";
 
 const BASE_URL = "http://localhost:3000/api";
 
@@ -36,6 +38,18 @@ userRequest.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// A rejected token (expired, or no longer an admin) ends the session, which
+// sends the panel back to the login page.
+userRequest.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      store.dispatch(logout());
+    }
     return Promise.reject(error);
   }
 );

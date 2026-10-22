@@ -22,11 +22,9 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(dispatch, { email, password });
-      // If login is successful, navigate to dashboard
-      // You might want to check for a successful login state in your Redux store
-      // before navigating
-      navigate('/');
+      if (await login(dispatch, { email, password })) {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
       // Error handling is managed by Redux, so we don't need to set local error state
       console.error('Login failed:', err);
