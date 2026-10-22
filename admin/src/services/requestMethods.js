@@ -29,7 +29,9 @@ userRequest.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
-      config.headers.token = `Bearer ${token}`;
+      // The API only reads the standard Authorization header; the old custom
+      // `token` header was ignored, so every admin request was rejected.
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
