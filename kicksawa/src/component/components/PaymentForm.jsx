@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Loader2, Smartphone } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/products';
@@ -69,6 +70,14 @@ const normalizePhone = (input) => {
   return null;
 };
 
+/** A saved profile number, shown the way people write it: 0712 345 678. */
+const displayPhone = (input) => {
+  const msisdn = normalizePhone(input);
+  if (!msisdn) return input ? String(input) : '';
+  const local = `0${msisdn.slice(3)}`;
+  return `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
+};
+
 const Field = ({ label, hint, error, children }) => (
   <div>
     <label className="mb-1.5 block text-sm font-semibold" htmlFor={children.props.id}>
@@ -94,7 +103,9 @@ const inputClass = (invalid) =>
   );
 
 function PaymentForm({ onSuccess, cartTotal, cartItems }) {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // Start from the number on their profile so most customers only confirm it.
+  const savedPhone = useSelector((state) => state.user.currentUser?.phone);
+  const [phoneNumber, setPhoneNumber] = useState(() => displayPhone(savedPhone));
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
