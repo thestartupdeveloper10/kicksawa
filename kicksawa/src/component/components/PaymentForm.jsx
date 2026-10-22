@@ -190,7 +190,7 @@ function PaymentForm({ onSuccess, cartTotal, cartItems }) {
         setAttempt(null);
         // The server saves a paying number to a profile that had none; mirror
         // that locally so the next checkout is prefilled without a re-login.
-        if ([undefined, null, '', 'Not Provided'].includes(savedPhone)) {
+        if ([undefined, null, '', 'Not Provided'].includes(savedPhone) || /^Google-/.test(savedPhone)) {
           dispatch(updateUser({ ...currentUser, phone: `0${msisdn.slice(3)}` }));
         }
         onSuccess?.({ orderId: order.orderId, amount: result.amount, receipt: result.receipt });

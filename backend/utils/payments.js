@@ -12,8 +12,9 @@ const logger = require('./logger');
  * result: { status: 'success' | 'failed', resultCode, resultDesc,
  *           receipt?, paidAmount?, paidPhone? }
  */
-// What a profile holds when the customer never gave a number.
-const NO_PHONE = [null, '', 'Not Provided'];
+// What a profile holds when the customer never gave a number. Google
+// accounts used to be created with a 'Google-xxxx' placeholder.
+const NO_PHONE = [null, '', 'Not Provided', /^Google-/];
 
 /**
  * A number that has just completed a payment is one the customer uses, so

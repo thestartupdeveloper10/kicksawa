@@ -34,11 +34,10 @@ function GoogleAuth({ label = 'Continue with Google', returnTo = '/' }) {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      const res = await publicRequest.post('auth/google', {
-        name: result.user.displayName,
-        email: result.user.email,
-        googlePhotoUrl: result.user.photoURL,
-      });
+      // The server verifies this signed token with Firebase and takes the
+      // email from it; a bare email in the body could be anyone's.
+      const idToken = await result.user.getIdToken();
+      const res = await publicRequest.post('auth/google', { idToken });
 
       if (res.status === 200) {
         dispatch(loginSuccess(res.data));
