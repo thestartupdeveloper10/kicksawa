@@ -161,10 +161,10 @@ const CartPage = () => {
     [dispatch, userId]
   );
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (order) => {
     setCheckoutOpen(false);
     dispatch(clearCart({ userId }));
-    navigate('/order-confirmation');
+    navigate('/order-confirmation', { state: { order } });
   };
 
   return (
@@ -272,7 +272,6 @@ const CartPage = () => {
         <PaymentForm
           onSuccess={handlePaymentSuccess}
           cartTotal={total}
-          userId={userId}
           cartItems={items}
         />
       </Dialog>

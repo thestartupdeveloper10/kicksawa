@@ -11,6 +11,55 @@ const MAX_POLLS = 20; // ~60s, roughly how long the prompt stays on the handset
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/*
+ * Idempotency. Each checkout attempt carries a key; sending the same key again
+ * (a double tap, a retry after the connection dropped, reopening the dialog
+ * mid-payment) gets the original order back from the server instead of a
+ * second prompt on the customer's phone. The attempt is kept in sessionStorage
+ * so closing the dialog or reloading does not mint a fresh key.
+ */
+const ATTEMPT_STORAGE_KEY = 'kicksawa.checkoutAttempt';
+
+const newKey = () => {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+const readAttempt = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(ATTEMPT_STORAGE_KEY)) || null;
+  } catch {
+    return null;
+  }
+};
+
+const saveAttempt = (attempt) => {
+  try {
+    if (attempt) sessionStorage.setItem(ATTEMPT_STORAGE_KEY, JSON.stringify(attempt));
+    else sessionStorage.removeItem(ATTEMPT_STORAGE_KEY);
+  } catch {
+    // Storage blocked: the in-memory attempt still covers this visit.
+  }
+};
+
+/** Same key for the same request; a changed bag, phone or address is a new attempt. */
+const attemptFor = (current, fingerprint) =>
+  current && current.fingerprint === fingerprint ? current : { key: newKey(), fingerprint };
+
+/** No response at all means the request may or may not have landed; resending is safe with the same key. */
+const postCheckout = async (payload, key) => {
+  const send = () =>
+    userRequest.post('orders/checkout', payload, { headers: { 'Idempotency-Key': key } });
+  try {
+    return await send();
+  } catch (error) {
+    if (error.response) throw error;
+    await wait(1000);
+    return send();
+  }
+};
+
 /** Safaricom expects 2547XXXXXXXX. Accept the ways people actually type it. */
 const normalizePhone = (input) => {
   const digits = String(input).replace(/\D/g, '');
@@ -44,7 +93,7 @@ const inputClass = (invalid) =>
     invalid ? 'border-destructive' : 'border-line-strong'
   );
 
-function PaymentForm({ onSuccess, cartTotal, userId, cartItems }) {
+function PaymentForm({ onSuccess, cartTotal, cartItems }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +104,11 @@ function PaymentForm({ onSuccess, cartTotal, userId, cartItems }) {
   // The poll loop outlives a fast unmount (dialog closed mid-payment), so it
   // has to stop touching state once the form is gone.
   const alive = useRef(true);
+  const attempt = useRef(readAttempt());
+  const setAttempt = (next) => {
+    attempt.current = next;
+    saveAttempt(next);
+  };
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -62,14 +116,15 @@ function PaymentForm({ onSuccess, cartTotal, userId, cartItems }) {
     };
   }, []);
 
-  const pollPaymentStatus = async (checkoutRequestId) => {
+  // The server decides whether the order is paid; this only asks it.
+  const pollPaymentStatus = async (orderId) => {
     for (let attempt = 0; attempt < MAX_POLLS; attempt += 1) {
       await wait(POLL_INTERVAL_MS);
-      if (!alive.current) return { status: 'abandoned' };
-      const { data } = await userRequest.post('checkout/payment-status', { checkoutRequestId });
-      if (data.status !== 'pending') return data;
+      if (!alive.current) return { paymentStatus: 'abandoned' };
+      const { data } = await userRequest.get(`orders/${orderId}/status`);
+      if (data.paymentStatus !== 'awaiting') return data;
     }
-    return { status: 'timeout' };
+    return { paymentStatus: 'timeout' };
   };
 
   const handleSubmit = async (event) => {
@@ -86,41 +141,60 @@ function PaymentForm({ onSuccess, cartTotal, userId, cartItems }) {
     setFailed(false);
     setMessage('Check your phone and enter your M-PESA PIN to approve.');
 
+    // Only what was chosen goes up. The server prices the order from the
+    // catalogue and charges that, whatever this page believes the total is.
+    const payload = {
+      items: cartItems.map((item) => ({
+        productId: item._id,
+        quantity: item.quantity,
+        size: item.selectedSize || undefined,
+        color: item.selectedColor || undefined,
+      })),
+      address,
+      phone: msisdn,
+    };
+    setAttempt(attemptFor(attempt.current, JSON.stringify(payload)));
+
     try {
-      const { data: push } = await userRequest.post('checkout/initiate-payment', {
-        phoneNumber: msisdn,
-        amount: cartTotal,
-      });
-
-      if (!push.CheckoutRequestID) {
-        throw new Error(push.errorMessage || 'Could not reach M-PESA');
-      }
-
-      const result = await pollPaymentStatus(push.CheckoutRequestID);
+      const { data: order } = await postCheckout(payload, attempt.current.key);
       if (!alive.current) return;
 
-      if (result.status === 'success') {
-        await userRequest.post('orders', {
-          userId,
-          products: cartItems.map((item) => ({ productId: item._id, quantity: item.quantity })),
-          amount: cartTotal,
-          address: { details: address },
-        });
-        onSuccess?.();
+      if (order.amount !== cartTotal) {
+        setMessage(
+          `Prices have changed since you added these. Approve ${formatPrice(order.amount)} on your phone.`
+        );
+      }
+
+      const result = await pollPaymentStatus(order.orderId);
+      if (!alive.current) return;
+
+      if (result.paymentStatus === 'paid') {
+        setAttempt(null);
+        onSuccess?.({ orderId: order.orderId, amount: result.amount, receipt: result.receipt });
         return;
       }
 
+      // A timeout keeps the key: paying again re-checks the same order rather
+      // than prompting twice. Any settled outcome frees the next tap to start
+      // a new attempt.
+      if (result.paymentStatus !== 'timeout' && result.paymentStatus !== 'abandoned') {
+        setAttempt(null);
+      }
       setFailed(true);
       setMessage(
-        result.status === 'timeout'
-          ? 'No confirmation yet. If you were charged, check M-PESA before paying again.'
+        result.paymentStatus === 'timeout'
+          ? "No confirmation yet. Tap Pay again to check: you won't get a second prompt for this order."
           : result.resultDesc || 'The payment was not completed. Your bag has been kept.'
       );
     } catch (error) {
       console.error(error);
+      // The server has settled this attempt (prompt failed, or the key was
+      // refused), so the next try needs a key of its own.
+      const status = error.response?.status;
+      if (status === 422 || status >= 500) setAttempt(null);
       if (!alive.current) return;
       setFailed(true);
-      setMessage('Something went wrong reaching M-PESA. Please try again.');
+      setMessage(error.response?.data?.error || 'Something went wrong reaching M-PESA. Please try again.');
     } finally {
       if (alive.current) setLoading(false);
     }

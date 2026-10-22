@@ -1,4 +1,11 @@
+const crypto = require("crypto");
+const mongoose = require("mongoose");
+const { rateLimit } = require("express-rate-limit");
 const Order = require("../models/order");
+const Product = require("../models/product");
+const config = require("../utils/config");
+const mpesa = require("../utils/mpesa");
+const { refreshPayment } = require("../utils/payments");
 const {
   verifyToken,
   verifyTokenAndAuthorization,
@@ -7,9 +14,246 @@ const {
 
 const orderRouter = require("express").Router();
 
-//CREATE
+const MAX_LINES = 50;
+const MAX_QUANTITY = 10; // Same cap the bag enforces per line.
 
-orderRouter.post("/", verifyToken, async (req, res) => {
+// Each checkout sends a prompt to a real handset, so cap how often one
+// account can do it. Status polling is cheaper but still calls Safaricom.
+const checkoutLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  // Only attempts that sent a new prompt (201) count: not a mistyped number,
+  // and not a retry that replayed an earlier attempt.
+  skipFailedRequests: true,
+  requestWasSuccessful: (req, res) => res.statusCode === 201,
+  keyGenerator: (req) => req.user.id,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many payment attempts. Please wait a few minutes and try again." },
+});
+
+const statusLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 40,
+  keyGenerator: (req) => req.user.id,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many requests." },
+});
+
+const sameOption = (a, b) =>
+  String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
+/**
+ * Turns what the client asked for into priced order lines using the catalogue,
+ * never the client's own prices. Returns { lines } or { error }.
+ */
+const priceItems = async (items) => {
+  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_LINES) {
+    return { error: "Your bag is empty." };
+  }
+
+  for (const item of items) {
+    if (!mongoose.isValidObjectId(item?.productId)) {
+      return { error: "Your bag contains an item we could not find." };
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_QUANTITY) {
+      return { error: `Quantities must be between 1 and ${MAX_QUANTITY}.` };
+    }
+  }
+
+  const ids = [...new Set(items.map((item) => String(item.productId)))];
+  const products = await Product.find({ _id: { $in: ids } });
+  const byId = new Map(products.map((product) => [String(product._id), product]));
+
+  const lines = [];
+  for (const item of items) {
+    const product = byId.get(String(item.productId));
+    if (!product) {
+      return { error: "Your bag contains an item that is no longer available." };
+    }
+    if (!product.inStock) {
+      return { error: `${product.title} is out of stock.` };
+    }
+
+    const sizes = product.size || [];
+    if (sizes.length > 0 && !sizes.some((size) => sameOption(size, item.size))) {
+      return { error: `Choose an available size for ${product.title}.` };
+    }
+    const colors = product.color || [];
+    if (colors.length > 0 && item.color && !colors.some((color) => sameOption(color, item.color))) {
+      return { error: `Choose an available colour for ${product.title}.` };
+    }
+
+    lines.push({
+      productId: String(product._id),
+      quantity: item.quantity,
+      title: product.title,
+      size: item.size ? String(item.size).trim() : undefined,
+      color: item.color ? String(item.color).trim().toLowerCase() : undefined,
+      unitPrice: product.price,
+    });
+  }
+
+  return { lines };
+};
+
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,100}$/;
+
+/** A stable hash of what the customer asked for, independent of key order. */
+const fingerprintOf = ({ items, details, msisdn }) => {
+  const normalized = (Array.isArray(items) ? items : [])
+    .map((item) => [
+      String(item?.productId ?? ""),
+      Number(item?.quantity),
+      String(item?.size ?? "").trim().toLowerCase(),
+      String(item?.color ?? "").trim().toLowerCase(),
+    ])
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify({ items: normalized, details, msisdn }))
+    .digest("hex");
+};
+
+const PUSH_FAILED = { error: "Something went wrong reaching M-PESA. Please try again." };
+
+/** Answers a retried checkout with what the first attempt produced. */
+const replayCheckout = (res, order, fingerprint) => {
+  res.set("Idempotent-Replayed", "true");
+  if (order.idempotencyFingerprint !== fingerprint) {
+    return res.status(422).json({
+      error: "This checkout was already submitted with different details. Please try again.",
+    });
+  }
+  if (order.payment?.status === "failed" && !order.payment.checkoutRequestId) {
+    return res.status(502).json(PUSH_FAILED);
+  }
+  return res.status(200).json({
+    orderId: order._id,
+    amount: order.amount,
+    subtotal: order.subtotal,
+    deliveryFee: order.deliveryFee,
+  });
+};
+
+// CHECKOUT
+// The server prices the order, saves it as unpaid, then asks M-PESA for
+// exactly that amount. The client only learns the outcome through /:id/status.
+// Requires an Idempotency-Key header: resending the same key (a double tap,
+// a retry after a dropped connection) returns the original order instead of
+// prompting the customer's phone a second time.
+
+orderRouter.post("/checkout", verifyToken, checkoutLimiter, async (req, res) => {
+  const { items, address, phone } = req.body;
+
+  const idempotencyKey = req.get("Idempotency-Key");
+  if (!idempotencyKey || !IDEMPOTENCY_KEY.test(idempotencyKey)) {
+    return res.status(400).json({ error: "Missing or malformed Idempotency-Key header." });
+  }
+
+  const msisdn = mpesa.normalizePhone(phone);
+  if (!msisdn) {
+    return res.status(400).json({ error: "Enter a valid Safaricom number, e.g. 0712 345 678." });
+  }
+  const details = typeof address === "string" ? address.trim() : "";
+  if (details.length < 6 || details.length > 500) {
+    return res.status(400).json({ error: "Add a delivery address we can find." });
+  }
+
+  const fingerprint = fingerprintOf({ items, details, msisdn });
+  const previous = await Order.findOne({ userId: req.user.id, idempotencyKey });
+  if (previous) {
+    return replayCheckout(res, previous, fingerprint);
+  }
+
+  const { lines, error } = await priceItems(items);
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  const deliveryFee = subtotal >= config.FREE_DELIVERY_THRESHOLD ? 0 : config.DELIVERY_FEE;
+  // M-PESA only takes whole shillings.
+  const amount = Math.round(subtotal + deliveryFee);
+
+  let order;
+  try {
+    order = await Order.create({
+      userId: req.user.id,
+      idempotencyKey,
+      idempotencyFingerprint: fingerprint,
+      products: lines,
+      subtotal,
+      deliveryFee,
+      amount,
+      address: { details },
+      payment: { method: "mpesa", status: "awaiting", phone: msisdn },
+    });
+  } catch (err) {
+    // Two requests with the same key raced past the lookup above; the unique
+    // index let exactly one create the order, so answer as its replay.
+    if (err.code === 11000) {
+      const winner = await Order.findOne({ userId: req.user.id, idempotencyKey });
+      if (winner) return replayCheckout(res, winner, fingerprint);
+    }
+    throw err;
+  }
+
+  try {
+    const push = await mpesa.stkPush({
+      phone: msisdn,
+      amount,
+      reference: `KICKSAWA-${String(order._id).slice(-8).toUpperCase()}`,
+      description: "Kicksawa order",
+    });
+    if (!push.CheckoutRequestID) {
+      throw new Error(push.errorMessage || "No CheckoutRequestID in STK push response");
+    }
+
+    order.payment.checkoutRequestId = push.CheckoutRequestID;
+    await order.save();
+
+    return res.status(201).json({ orderId: order._id, amount, subtotal, deliveryFee });
+  } catch (err) {
+    console.error("STK push failed:", err.response?.data || err.message);
+    order.payment.status = "failed";
+    order.payment.resultDesc = "Could not reach M-PESA";
+    order.status = "cancelled";
+    await order.save();
+    return res.status(502).json(PUSH_FAILED);
+  }
+});
+
+// PAYMENT STATUS
+// The order's state is set by the server (callback, or a query to Safaricom
+// while it is still unpaid), never reported by the client.
+
+orderRouter.get("/:id/status", verifyToken, statusLimiter, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "Order not found." });
+  }
+  const order = await Order.findById(req.params.id);
+  if (!order || (order.userId !== req.user.id && !req.user.isAdmin)) {
+    return res.status(404).json({ error: "Order not found." });
+  }
+
+  // The callback usually gets there first; this covers it not arriving.
+  await refreshPayment(order);
+  const current = await Order.findById(order._id);
+
+  res.json({
+    paymentStatus: current.payment?.status || "awaiting",
+    resultDesc: current.payment?.resultDesc,
+    receipt: current.payment?.receipt,
+    amount: current.amount,
+  });
+});
+
+//CREATE
+// Admin only: customers create orders through /checkout, which prices them.
+
+orderRouter.post("/", verifyTokenAndAdmin, async (req, res) => {
   const newOrder = new Order(req.body);
 
   try {

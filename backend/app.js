@@ -12,7 +12,6 @@ const usersRouter = require('./controllers/users');
 const productRouter = require('./controllers/product');
 const cartRouter = require('./controllers/cart');
 const orderRouter = require('./controllers/order');
-const stripeRoute = require('./controllers/stripe');
 const contactRouter = require('./controllers/contact');
 const mpesaRouter = require('./controllers/mpesa');
 
