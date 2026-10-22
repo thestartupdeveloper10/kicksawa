@@ -15,6 +15,7 @@ const cartRouter = require('./controllers/cart');
 const orderRouter = require('./controllers/order');
 const contactRouter = require('./controllers/contact');
 const mpesaRouter = require('./controllers/mpesa');
+const { imgRouter } = require('./controllers/img');
 
 mongoose.set('strictQuery', false);
 
@@ -74,6 +75,7 @@ app.use('/api/products', productRouter);
 app.use('/api/carts', cartRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/checkout', mpesaRouter);
+app.use('/api/img', imgRouter);
 
 // Every non-API path is a client-side route, so hand back the SPA shell instead
 // of falling through to unknownEndpoint. Without this, refreshing or sharing a

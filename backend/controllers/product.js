@@ -1,4 +1,5 @@
 const Product = require("../models/product");
+const { warmImageCache } = require("./img");
 const {
   verifyToken,
   verifyTokenAndAuthorization,
@@ -68,6 +69,7 @@ productRouter.post("/", verifyTokenAndAdmin, async (req, res) => {
 
   try {
     const savedProduct = await newProduct.save();
+    warmImageCache(savedProduct.img || []);
     res.status(200).json(savedProduct);
   } catch (err) {
     console.error(err);
@@ -107,6 +109,7 @@ productRouter.put("/:id", verifyTokenAndAdmin, async (req, res) => {
 
   try {
     const updatedProduct = await product.save();
+    warmImageCache(updatedProduct.img || []);
     res.status(200).json(updatedProduct);
   } catch (err) {
     console.error(err);
