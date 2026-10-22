@@ -20,13 +20,18 @@ const userSlice = createSlice({
       state.isFetching = false;
       state.error = action.payload || 'Invalid email or password.';
     },
+    // Profile edits: keep the token, refresh the details shown in the panel.
+    updateUser: (state, action) => {
+      state.currentUser = { ...state.currentUser, ...action.payload };
+    },
     logout: (state) => {
       state.currentUser = null;
+      state.error = false;
     },
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout } = userSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, logout, updateUser } = userSlice.actions;
 
 /** Signed in as an admin with a token that has not expired. */
 export const isAdminSession = (user) => {

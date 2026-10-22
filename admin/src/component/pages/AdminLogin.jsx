@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from "../../redux/apiCalls";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+
+import { login } from '../../redux/apiCalls';
+import { isAdminSession } from '../../redux/userRedux';
+import { Button } from '@/components/ui/button';
+import { Field, FormMessage, Input } from '@/components/ui/field';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -15,82 +14,79 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isFetching, error, currentUser } = useSelector((state) => state.user);
 
-  // Assuming your Redux store has a user slice with error and isFetching states
-  const { isFetching, error } = useSelector((state) => state.user);
+  if (isAdminSession(currentUser)) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (await login(dispatch, { email, password })) {
-        navigate('/', { replace: true });
-      }
-    } catch (err) {
-      // Error handling is managed by Redux, so we don't need to set local error state
-      console.error('Login failed:', err);
+    if (await login(dispatch, { email, password })) {
+      navigate('/', { replace: true });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-gray-800 dark:text-white">Admin Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <p className="font-display text-display-md font-black uppercase leading-none tracking-tightest font-expanded">
+            Kicksawa
+          </p>
+          <p className="mt-3 text-eyebrow font-bold uppercase text-muted-foreground">Admin sign in</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-line bg-background p-6" noValidate>
+          {error && <FormMessage>{error}</FormMessage>}
+
+          <Field label="Email">
+            {({ id, describedBy }) => (
               <Input
-                id="email"
-                name="email"
+                id={id}
+                describedBy={describedBy}
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
-            </div>
-            <div>
-              <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">Password</Label>
+            )}
+          </Field>
+
+          <Field label="Password">
+            {({ id, describedBy }) => (
               <div className="relative">
                 <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
+                  id={id}
+                  describedBy={describedBy}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white pr-10"
                   required
+                  className="pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? (
-                    <EyeOffIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              disabled={isFetching}
-            >
-              {isFetching ? 'Logging in...' : 'Log In'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            )}
+          </Field>
+
+          <Button type="submit" block disabled={isFetching}>
+            {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isFetching ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Customer accounts can&apos;t sign in here.
+        </p>
+      </div>
     </div>
   );
 };

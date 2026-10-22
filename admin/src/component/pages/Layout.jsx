@@ -1,115 +1,195 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, Users, ShoppingCart, Package, User, X, LogOut, Sun, Moon
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  LayoutDashboard, Package, ShoppingBag, Users, Mail, UserRound, LogOut, Sun, Moon, Menu, X, ExternalLink,
 } from 'lucide-react';
 
-const Layout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const location = useLocation();
+import { logout } from '../../redux/userRedux';
+import { userRequest } from '../../services/requestMethods';
+import { IconButton } from '@/components/ui/icon-button';
+import { cn } from '@/lib/utils';
 
+const STOREFRONT_URL = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5173';
+
+/** Same storage key as the storefront, so a person's theme follows them. */
+const useTheme = () => {
+  const [theme, setTheme] = useState(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
   useEffect(() => {
-    const isDark = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  }, []);
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // Storage blocked: the theme still applies for this visit.
+    }
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
+};
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+const NAV = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/orders', label: 'Orders', icon: ShoppingBag, count: (s) => s.toShip + s.needsReview },
+  // No count here: sold-out sizes are a standing state, not a to-do, and a
+  // badge that never clears stops meaning anything. The dashboard tracks stock.
+  { to: '/products', label: 'Products', icon: Package },
+  { to: '/customers', label: 'Customers', icon: Users },
+  { to: '/messages', label: 'Messages', icon: Mail, count: (s) => s.unhandledMessages },
+  { to: '/profile', label: 'Profile', icon: UserRound },
+];
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode);
-    document.documentElement.classList.toggle('dark', newDarkMode);
+const Wordmark = () => (
+  <div>
+    <p className="font-display text-xl font-black uppercase leading-none tracking-tightest font-expanded">
+      Kicksawa
+    </p>
+    <p className="mt-1.5 text-eyebrow font-bold uppercase text-muted-foreground">Admin</p>
+  </div>
+);
+
+const Layout = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = useSelector((state) => state.user.currentUser);
+  const [theme, toggleTheme] = useTheme();
+  const [open, setOpen] = useState(false);
+  const [summary, setSummary] = useState(null);
+
+  // Refresh the sidebar counts on each navigation, so acting on an order or
+  // message is reflected as soon as you move on.
+  useEffect(() => {
+    let cancelled = false;
+    userRequest
+      .get('/orders/summary')
+      .then(({ data }) => !cancelled && setSummary(data))
+      .catch(() => {});
+    setOpen(false);
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login', { replace: true });
   };
 
-  const isActiveRoute = (path) => location.pathname === path;
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="flex items-start justify-between px-6 pb-8 pt-7">
+        <Wordmark />
+        <IconButton label="Close menu" className="-mr-2 -mt-2 lg:hidden" onClick={() => setOpen(false)}>
+          <X strokeWidth={1.75} />
+        </IconButton>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3" aria-label="Admin">
+        {NAV.map((item) => {
+          const count = summary && item.count ? item.count(summary) : 0;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold',
+                  'transition-[background-color,color] duration-fast ease-swift',
+                  isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-surface hover:text-foreground'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                  <span className="flex-1">{item.label}</span>
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        'tnum rounded-full px-2 py-0.5 text-[11px] font-bold leading-none',
+                        isActive ? 'bg-background text-foreground' : 'bg-brand text-brand-foreground'
+                      )}
+                    >
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      <div className="space-y-1 border-t border-line px-3 py-4">
+        <a
+          href={STOREFRONT_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors duration-fast hover:bg-surface hover:text-foreground"
+        >
+          <ExternalLink className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          View store
+        </a>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors duration-fast hover:bg-surface hover:text-foreground"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          ) : (
+            <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          )}
+          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors duration-fast hover:bg-surface hover:text-foreground"
+        >
+          <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          <span className="min-w-0 flex-1 text-left">
+            Sign out
+            {user?.email && (
+              <span className="block truncate text-xs font-normal text-muted-foreground">{user.email}</span>
+            )}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Sidebar */}
-      <div className={`bg-gradient-to-b from-purple-600 to-indigo-700 dark:from-purple-900 dark:to-indigo-950 w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition duration-200 ease-in-out z-20`}>
-        <div className="flex justify-between items-center px-4">
-          <span className="text-2xl font-bold text-white">ElegantAdmin</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-white hover:bg-purple-500 dark:hover:bg-purple-800"
-            onClick={toggleSidebar}
-          >
-            <X className="h-6 w-6" />
-          </Button>
+    <div className="min-h-screen bg-surface lg:flex">
+      {/* Desktop sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-line bg-background lg:block">
+        {sidebar}
+      </aside>
+
+      {/* Phone / tablet: top bar + drawer */}
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-background px-4 py-3 lg:hidden">
+        <Wordmark />
+        <IconButton label="Open menu" onClick={() => setOpen(true)}>
+          <Menu strokeWidth={1.75} />
+        </IconButton>
+      </div>
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-background shadow-pop">{sidebar}</aside>
         </div>
-        <nav className="space-y-2">
-          {[
-            { path: "/", icon: LayoutDashboard, label: "Dashboard" },
-            { path: "/users", icon: Users, label: "Users" },
-            { path: "/products", icon: Package, label: "Products" },
-            { path: "/orders", icon: ShoppingCart, label: "Orders" },
-            { path: "/profile", icon: User, label: "Profile" },
-          ].map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-colors duration-150 ease-in-out ${
-                isActiveRoute(item.path)
-                  ? 'bg-white bg-opacity-10 text-white'
-                  : 'text-purple-100 hover:bg-white hover:bg-opacity-5'
-              }`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-200">
-          <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={toggleSidebar}
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
-                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-              <Button variant="outline" className="flex items-center space-x-2">
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-          <div className="container mx-auto px-6 py-8">
-            {children}
-          </div>
-        </main>
-      </div>
-
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-10 bg-black opacity-50 md:hidden"
-          onClick={toggleSidebar}
-        ></div>
       )}
+
+      <main id="main" className="min-w-0 flex-1">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 };

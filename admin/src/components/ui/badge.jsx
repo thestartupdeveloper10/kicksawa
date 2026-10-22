@@ -1,34 +1,33 @@
-import * as React from "react"
-import { cva } from "class-variance-authority";
+import { cva } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Uppercase micro-labels: "Just In", "Sale", "Sold Out".
+ * These carry a lot of the editorial voice, so they are letter-spaced caps
+ * rather than rounded pills with sentence case.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 whitespace-nowrap text-eyebrow font-bold uppercase",
   {
     variants: {
       variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        /* Free-standing label with no chip — the default editorial treatment. */
+        bare: "text-brand",
+        neutral: "text-muted-foreground",
+        solid: "rounded-full bg-foreground px-2.5 py-1 text-background",
+        brand: "rounded-full bg-brand px-2.5 py-1 text-brand-foreground",
+        volt: "rounded-full bg-volt px-2.5 py-1 text-volt-foreground",
+        outline: "rounded-full border border-line-strong px-2.5 py-1 text-foreground",
+        success: "rounded-full bg-success px-2.5 py-1 text-success-foreground",
       },
     },
-    defaultVariants: {
-      variant: "default",
-    },
+    defaultVariants: { variant: "bare" },
   }
 )
 
-function Badge({
-  className,
-  variant,
-  ...props
-}) {
-  return (<div className={cn(badgeVariants({ variant }), className)} {...props} />);
-}
+const Badge = ({ className, variant, ...props }) => (
+  <span className={cn(badgeVariants({ variant }), className)} {...props} />
+)
 
 export { Badge, badgeVariants }

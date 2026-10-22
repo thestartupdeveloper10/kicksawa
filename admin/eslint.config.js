@@ -29,6 +29,12 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // This is a plain-JS codebase with no PropTypes anywhere; the rule only
+      // produced noise. Types belong in a TS migration, not runtime checks.
+      'react/prop-types': 'off',
+      // React 18 only forwards this attribute in lowercase; the camelCase
+      // form arrives in React 19, which this rule assumes.
+      'react/no-unknown-property': ['error', { ignore: ['fetchpriority'] }],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

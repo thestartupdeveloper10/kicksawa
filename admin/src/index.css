@@ -1,52 +1,306 @@
+/* Copied from kicksawa/src/index.css so the admin and storefront share one
+   design language. Keep the two in step when tokens change. */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 262.1 83.3% 57.8%;
-  --radius: 0.5rem;
-  --tooltip-bg: #ffffff;
-  --tooltip-color: #1f2937;
+/* ==========================================================================
+   KICKSAWA design tokens
+   --------------------------------------------------------------------------
+   Every colour is stored as a bare HSL triplet ("H S% L%") so Tailwind can
+   wrap it as hsl(var(--token) / <alpha-value>) and opacity modifiers such as
+   `bg-foreground/10` keep working. Do not store hex here.
+
+   The palette is deliberately achromatic: white / near-black / a five-step
+   grey ramp, plus exactly two chromatic accents used sparingly.
+   ========================================================================== */
+
+@layer base {
+  :root {
+    /* Page --------------------------------------------------------------- */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+
+    /* Raised / recessed surfaces. `surface` is the flat swatch product
+       photography sits on — the single most recognisable Nike grey.        */
+    --surface: 0 0% 96%;
+    --surface-2: 0 0% 92%;
+    --surface-3: 0 0% 88%;
+
+    /* Hairlines. `line` for dividers, `line-strong` for interactive edges. */
+    --line: 0 0% 89%;
+    --line-strong: 0 0% 76%;
+
+    /* Type ramp ---------------------------------------------------------- */
+    --muted: 0 0% 96%;
+    /* Both tiers are set so they clear 4.5:1 against `--surface`, not just
+       against white — most muted text on this site sits on a grey panel.
+       muted 42% = 4.77:1 on --surface; subtle 46% = 4.60:1 on white. */
+    --muted-foreground: 0 0% 42%;
+    --subtle-foreground: 0 0% 46%;
+
+    /* Actions ------------------------------------------------------------ */
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 7%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 7%;
+
+    /* Containers --------------------------------------------------------- */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    /* Semantic ----------------------------------------------------------- */
+    --brand: 12 78% 50%;          /* ember — sale prices, urgency, hot badges */
+    --brand-foreground: 0 0% 100%;
+    --volt: 69 100% 50%;          /* graphic-only highlight, never body text  */
+    --volt-foreground: 0 0% 7%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 62% 30%;
+    --success-foreground: 0 0% 100%;
+
+    /* Forms -------------------------------------------------------------- */
+    --border: 0 0% 89%;
+    --input: 0 0% 82%;
+    --ring: 0 0% 7%;
+
+    /* Geometry ----------------------------------------------------------- */
+    --radius: 0.25rem;
+
+    /* Depth. Layered and transparent so they sit on any background.
+       See make-interfaces-feel-better: shadows over borders.               */
+    --shadow-xs: 0 1px 1px hsl(0 0% 0% / 0.04);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.05), 0 1px 1px hsl(0 0% 0% / 0.04);
+    --shadow-md: 0 2px 4px -1px hsl(0 0% 0% / 0.06), 0 6px 14px -3px hsl(0 0% 0% / 0.08);
+    --shadow-lg: 0 4px 8px -2px hsl(0 0% 0% / 0.06), 0 16px 32px -8px hsl(0 0% 0% / 0.12);
+    --shadow-pop: 0 0 0 1px hsl(0 0% 0% / 0.04), 0 8px 16px -6px hsl(0 0% 0% / 0.08),
+      0 24px 48px -16px hsl(0 0% 0% / 0.16);
+
+    /* Motion. One easing for interactive state, one for entrances.         */
+    --ease-swift: cubic-bezier(0.2, 0, 0, 1);
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-fast: 150ms;
+    --dur: 250ms;
+    --dur-slow: 450ms;
+
+    /* Layout. Set by the Navbar so sticky offsets stay in sync.            */
+    --header-h: 4rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    --surface: 0 0% 9%;
+    --surface-2: 0 0% 12%;
+    --surface-3: 0 0% 16%;
+
+    --line: 0 0% 16%;
+    --line-strong: 0 0% 27%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 68%;
+    --subtle-foreground: 0 0% 56%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 98%;
+
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    --brand: 12 100% 60%;
+    --brand-foreground: 0 0% 4%;
+    --volt: 69 100% 50%;
+    --volt-foreground: 0 0% 7%;
+    --destructive: 0 85% 62%;
+    --destructive-foreground: 0 0% 4%;
+    --success: 142 55% 48%;
+    --success-foreground: 0 0% 4%;
+
+    --border: 0 0% 16%;
+    --input: 0 0% 24%;
+    --ring: 0 0% 83%;
+
+    /* Shadows read as almost nothing on near-black, so lean darker.        */
+    --shadow-xs: 0 1px 1px hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.5), 0 1px 1px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 2px 4px -1px hsl(0 0% 0% / 0.5), 0 6px 14px -3px hsl(0 0% 0% / 0.55);
+    --shadow-lg: 0 4px 8px -2px hsl(0 0% 0% / 0.5), 0 16px 32px -8px hsl(0 0% 0% / 0.6);
+    --shadow-pop: 0 0 0 1px hsl(0 0% 100% / 0.08), 0 8px 16px -6px hsl(0 0% 0% / 0.5),
+      0 24px 48px -16px hsl(0 0% 0% / 0.7);
+  }
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 262.1 83.3% 57.8%;
-  --tooltip-bg: #1f2937;
-  --tooltip-color: #ffffff;
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-synthesis-weight: none;
+    overflow-x: hidden;
+  }
+
+  /* Headings are display type: no orphaned last words, never auto-italic. */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* A visible, high-contrast focus ring that survives both themes. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+  }
+
+  /* Inputs inherit the type system rather than the UA default. */
+  input, textarea, select, button {
+    font: inherit;
+    color: inherit;
+  }
+
+  img {
+    /* Stops the 1px gap between a full-bleed image and its container. */
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+@layer utilities {
+  /* Archivo's width axis (Google serves the range as font-stretch 62%-125%).
+     Using the standard property rather than font-variation-settings keeps it
+     composable with font-weight and degrades to normal width if the variable
+     font fails to load.
+
+     `expanded` is the display voice, `wide` the sub-display voice, and
+     `condensed` is reserved for dense data such as size grids. */
+  .font-expanded {
+    font-stretch: 125%;
+  }
+  .font-wide {
+    font-stretch: 112%;
+  }
+  .font-normal-width {
+    font-stretch: 100%;
+  }
+  .font-condensed {
+    font-stretch: 82%;
+  }
+
+  /* Any number that can change without the layout reflowing. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Carousels scroll by drag/arrow — the native bar is visual noise. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Breaks an element out of a centred container to full viewport width. */
+  .full-bleed {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+
+  /* A hairline that reads as a seam rather than a border. */
+  .hairline-t {
+    box-shadow: inset 0 1px 0 hsl(var(--line));
+  }
+  .hairline-b {
+    box-shadow: inset 0 -1px 0 hsl(var(--line));
+  }
+
+  /* Product photography sits on flat grey; a faint inset keeps the edge
+     defined when the shot is light-on-light. */
+  .img-outline {
+    outline: 1px solid hsl(var(--foreground) / 0.06);
+    outline-offset: -1px;
+  }
+
+  /* Wordmark masthead sized to fill its container exactly.
+     14.62cqw is measured, not derived: Archivo 900 @ font-stretch 125% with
+     -0.045em tracking renders "KICKSAWA" at 6.84x its font-size, and this
+     value lands the ink at 99.9% of the container across 390-2560px.
+     Container units rather than vw so it still fits once the container hits
+     its max-width; the vw line is the fallback for engines without cqw. */
+  .masthead-fit-wrap {
+    container-type: inline-size;
+  }
+  .masthead-fit {
+    font-size: 12.4vw;
+    font-size: 14.62cqw;
+    /* Optical flush: pull the K's left sidebearing back to the gutter. */
+    margin-left: -0.012em;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion
+   Honour the OS setting, but keep opacity so staggered reveals still resolve
+   to a visible state instead of leaving content stuck at opacity: 0.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,126 +1,164 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { deleteProduct } from "../../redux/apiCalls";
-import { publicRequest } from "../../services/requestMethods";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+
+import { publicRequest, userRequest, apiError } from '../../services/requestMethods';
+import { ConfirmDialog, ErrorNote, LoadingRows, PageHeader, Panel } from '@/components/admin';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { LOW_STOCK, formatKsh, isTracked, pairsOnHand, paymentStatusOf } from '@/lib/format';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
-  // Loaded here rather than through the store: the store has no slot for a
-  // single product, and the old call hit a route that does not exist.
   useEffect(() => {
     let cancelled = false;
-    publicRequest
-      .get(`/products/find/${id}`)
-      .then(({ data }) => {
-        if (!cancelled) setProduct(data);
+    Promise.all([publicRequest.get(`/products/find/${id}`), userRequest.get('/orders')])
+      .then(([p, o]) => {
+        if (cancelled) return;
+        if (!p.data) throw new Error('missing');
+        setProduct(p.data);
+        setOrders(o.data);
       })
-      .catch((err) => {
-        console.error('Failed to load product', err);
-        if (!cancelled) setError('Could not load this product.');
-      });
+      .catch((err) => !cancelled && setError(apiError(err, 'Could not load this product.')));
     return () => {
       cancelled = true;
     };
   }, [id]);
 
-  const handleDelete = () => {
-    dispatch(deleteProduct(id));
-    navigate('/products');
+  // Pairs sold per size, from paid orders.
+  const sold = useMemo(() => {
+    const bySize = new Map();
+    orders
+      .filter((o) => paymentStatusOf(o) === 'paid' && o.status !== 'cancelled')
+      .flatMap((o) => o.products.filter((line) => line.productId === id))
+      .forEach((line) => bySize.set(line.size || '', (bySize.get(line.size || '') || 0) + line.quantity));
+    return bySize;
+  }, [orders, id]);
+  const soldTotal = [...sold.values()].reduce((a, b) => a + b, 0);
+
+  const confirmDelete = async () => {
+    setBusy(true);
+    try {
+      await userRequest.delete(`/products/${id}`);
+      navigate('/products', { replace: true });
+    } catch (err) {
+      setDeleteError(apiError(err, 'Could not delete this product.'));
+      setBusy(false);
+    }
   };
 
-  if (error) return <div className="text-center text-red-600 dark:text-red-400">{error}</div>;
-  if (!product) return <div className="text-center text-gray-700 dark:text-gray-300">Loading...</div>;
+  if (error) return <ErrorNote>{error}</ErrorNote>;
+  if (!product) return <LoadingRows rows={6} />;
 
-  const tracked = Array.isArray(product.stock) && product.stock.length > 0;
+  const tracked = isTracked(product);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Product Details</h2>
-      
-      <Card className="bg-white dark:bg-gray-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-white">{product.title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h3>
-              <p className="text-gray-600 dark:text-gray-400">{product.desc}</p>
-            </div>
-            <div className="space-y-2">
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Price:</span>
-                <span className="ml-2 text-green-600 dark:text-green-400">Ksh {Number(product.price).toLocaleString('en-KE')}</span>
-              </div>
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Stock Status:</span>
-                <Badge className={`ml-2 ${product.inStock ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'}`}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
-                </Badge>
-              </div>
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Stock:</span>
-                {tracked ? (
-                  <ul className="mt-1 grid grid-cols-3 gap-1 text-sm sm:grid-cols-4">
-                    {product.stock.map((entry) => (
-                      <li
-                        key={entry.size || 'one-size'}
-                        className={entry.quantity <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}
-                      >
-                        {entry.size ? `${entry.size}: ` : ''}{entry.quantity}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="ml-2 text-gray-600 dark:text-gray-400">Not tracked</span>
-                )}
-              </div>
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Categories:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{product.categories.join(', ')}</span>
-              </div>
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Sizes:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{product.size.join(', ')}</span>
-              </div>
-              <div>
-                <span className="text-gray-700 dark:text-gray-300 font-semibold">Colors:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{product.color.join(', ')}</span>
-              </div>
-            </div>
+    <>
+      <Link to="/products" className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Products
+      </Link>
+      <PageHeader
+        eyebrow={product.brand}
+        title={product.title}
+        actions={
+          <>
+            <Button asChild size="sm"><Link to={`/products/edit/${id}`}>Edit</Link></Button>
+            <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDeleting(true)}>Delete</Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <Panel title="Stock">
+          {tracked ? (
+            <>
+              <p className="mb-4 text-sm text-muted-foreground">
+                <span className="tnum font-semibold text-foreground">{pairsOnHand(product)}</span> pairs on hand ·{' '}
+                <span className="tnum font-semibold text-foreground">{soldTotal}</span> sold
+              </p>
+              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {product.stock.map((entry) => (
+                  <li
+                    key={entry.size || 'one-size'}
+                    className={cn(
+                      'rounded-md border px-3 py-2.5',
+                      entry.quantity === 0 ? 'border-brand/40 bg-brand/5' : 'border-line'
+                    )}
+                  >
+                    <p className="text-xs text-muted-foreground">{entry.size ? `Size ${entry.size}` : 'Quantity'}</p>
+                    <p className={cn('tnum mt-0.5 font-bold', entry.quantity === 0 ? 'text-brand' : entry.quantity <= LOW_STOCK && 'text-brand')}>
+                      {entry.quantity === 0 ? 'Sold out' : entry.quantity}
+                    </p>
+                    {sold.get(entry.size) > 0 && (
+                      <p className="tnum text-xs text-muted-foreground">{sold.get(entry.size)} sold</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Stock isn&apos;t tracked for this product; it shows as{' '}
+              <strong className="text-foreground">{product.inStock ? 'in stock' : 'sold out'}</strong> until changed by hand.{' '}
+              <Link to={`/products/edit/${id}`} className="underline underline-offset-4">Track stock</Link>
+            </p>
+          )}
+        </Panel>
+
+        <Panel title="Details">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Price</dt>
+            <dd className="tnum font-semibold">{formatKsh(product.price)}</dd>
+            <dt className="text-muted-foreground">Status</dt>
+            <dd>{product.inStock ? <Badge variant="success">In stock</Badge> : <Badge variant="brand">Sold out</Badge>}</dd>
+            <dt className="text-muted-foreground">Categories</dt>
+            <dd>{product.categories?.join(', ') || '—'}</dd>
+            <dt className="text-muted-foreground">Sizes</dt>
+            <dd>{product.size?.join(', ') || 'One size'}</dd>
+            <dt className="text-muted-foreground">Colours</dt>
+            <dd className="flex flex-wrap gap-1.5">
+              {product.color?.length
+                ? product.color.map((c) => (
+                    <span key={c} className="inline-block h-5 w-5 rounded-full ring-1 ring-line-strong" style={{ backgroundColor: c }} title={c} />
+                  ))
+                : '—'}
+            </dd>
+          </dl>
+          <p className="mt-4 whitespace-pre-line text-sm text-muted-foreground">{product.desc}</p>
+        </Panel>
+      </div>
+
+      {product.img?.length > 0 && (
+        <Panel title="Images" className="mt-6">
+          <div className="flex flex-wrap gap-3">
+            {product.img.map((src, i) => (
+              <img key={src} src={src} alt={`${product.title}, image ${i + 1}`} className="img-outline h-28 w-28 rounded-md bg-surface object-cover" />
+            ))}
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Images</h3>
-            <div className="flex flex-wrap gap-2">
-              {product.img.map((image, index) => (
-                <img key={index} src={image} alt={`Product ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-              ))}
-            </div>
-          </div>
-          <div className="flex space-x-4 mt-6">
-            <Link to={`/products/edit/${product._id}`}>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white">Edit Product</Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              className="text-red-600 border-red-600 hover:bg-red-100 dark:text-red-400 dark:border-red-400 dark:hover:bg-red-900"
-              onClick={handleDelete}
-            >
-              Delete Product
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </Panel>
+      )}
+
+      <ConfirmDialog
+        open={deleting}
+        onClose={() => setDeleting(false)}
+        title="Delete product?"
+        description={`“${product.title}” disappears from the store. Past orders keep their own record of it.`}
+        confirmLabel="Delete"
+        tone="destructive"
+        onConfirm={confirmDelete}
+        busy={busy}
+        error={deleteError}
+      />
+    </>
   );
 };
 

@@ -1,131 +1,175 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from "react-redux";
-import { deleteProduct, getProducts } from "../../redux/apiCalls";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 
-// At or below this many pairs a size is flagged for restocking.
-const LOW_STOCK = 2;
+import { publicRequest, userRequest, apiError } from '../../services/requestMethods';
+import {
+  ConfirmDialog, EmptyState, ErrorNote, FilterChips, LoadingRows, PageHeader, Panel, SearchInput, Table, Td, Th,
+} from '@/components/admin';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatKsh, isTracked, lowSizes, pairsOnHand } from '@/lib/format';
 
-const isTracked = (product) => Array.isArray(product.stock) && product.stock.length > 0;
-const totalPairs = (product) => product.stock.reduce((sum, entry) => sum + entry.quantity, 0);
-const lowSizes = (product) =>
-  isTracked(product) ? product.stock.filter((entry) => entry.quantity <= LOW_STOCK) : [];
+const VIEWS = [
+  { id: 'all', label: 'All', test: () => true },
+  { id: 'low', label: 'Low or sold out', test: (p) => lowSizes(p).length > 0 },
+  { id: 'soldout', label: 'Sold out', test: (p) => p.inStock === false },
+  { id: 'untracked', label: 'Stock not tracked', test: (p) => !isTracked(p) },
+];
 
 const Products = () => {
-  const dispatch = useDispatch();
-  const products = useSelector((state) => state.product.products);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [lowOnly, setLowOnly] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const view = VIEWS.some((v) => v.id === params.get('view')) ? params.get('view') : 'all';
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [deleting, setDeleting] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
-  // These are thunks: they only run when dispatched. Calling them with
-  // dispatch as an argument, as before, silently did nothing.
   useEffect(() => {
-    dispatch(getProducts());
-  }, [dispatch]);
+    let cancelled = false;
+    publicRequest
+      .get('/products')
+      .then(({ data }) => !cancelled && setProducts([...data].sort((a, b) => a.title.localeCompare(b.title))))
+      .catch((err) => !cancelled && setError(apiError(err, 'Could not load products.')))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const handleDelete = (id) => {
-    dispatch(deleteProduct(id));
-  };
-
-  const lowCount = products.filter((product) => lowSizes(product).length > 0).length;
-
-  const filteredProducts = products.filter(product =>
-    product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (!lowOnly || lowSizes(product).length > 0)
+  const counts = useMemo(
+    () => Object.fromEntries(VIEWS.map((v) => [v.id, products.filter(v.test).length])),
+    [products]
   );
 
+  const visible = useMemo(() => {
+    const test = VIEWS.find((v) => v.id === view).test;
+    const term = search.trim().toLowerCase();
+    return products.filter(
+      (p) => test(p) && (!term || [p.title, p.brand, ...(p.categories || [])].some((f) => f?.toLowerCase().includes(term)))
+    );
+  }, [products, view, search]);
+
+  const confirmDelete = async () => {
+    setBusy(true);
+    setDeleteError('');
+    try {
+      await userRequest.delete(`/products/${deleting._id}`);
+      setProducts((prev) => prev.filter((p) => p._id !== deleting._id));
+      setDeleting(null);
+    } catch (err) {
+      setDeleteError(apiError(err, 'Could not delete this product.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Products Management</h2>
-        <Link to="/products/add">
-          <Button>Add New Product</Button>
-        </Link>
-      </div>
-      
-      <Card className="bg-white dark:bg-gray-800">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">Product List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-            <Button
-              variant={lowOnly ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setLowOnly(!lowOnly)}
-            >
-              Low stock ({lowCount})
-            </Button>
-          </div>
+    <>
+      <PageHeader
+        eyebrow="Catalogue"
+        title="Products"
+        description="Stock counts drop as orders are placed and come back when payments fail or orders are cancelled."
+        actions={
+          <Button asChild size="sm">
+            <Link to="/products/add"><Plus className="h-4 w-4" /> Add product</Link>
+          </Button>
+        }
+      />
+
+      {error && <ErrorNote>{error}</ErrorNote>}
+
+      <Panel>
+        <div className="mb-5 flex flex-col gap-4">
+          <FilterChips
+            options={VIEWS.map((v) => ({ id: v.id, label: v.label, count: counts[v.id] }))}
+            value={view}
+            onChange={(id) => setParams(id === 'all' ? {} : { view: id })}
+          />
+          <SearchInput value={search} onChange={setSearch} placeholder="Search title, brand or category" />
+        </div>
+
+        {loading ? (
+          <LoadingRows />
+        ) : visible.length === 0 ? (
+          <EmptyState title="No products here" body={search ? 'Nothing matches that search.' : undefined} />
+        ) : (
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-gray-700 dark:text-gray-300">Title</TableHead>
-                <TableHead className="text-gray-700 dark:text-gray-300">Price</TableHead>
-                <TableHead className="text-gray-700 dark:text-gray-300">In Stock</TableHead>
-                <TableHead className="text-gray-700 dark:text-gray-300">Stock</TableHead>
-                <TableHead className="text-gray-700 dark:text-gray-300">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product._id}>
-                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{product.title}</TableCell>
-                  <TableCell className="text-gray-700 dark:text-gray-300">Ksh {Number(product.price).toLocaleString('en-KE')}</TableCell>
-                  <TableCell className="text-gray-700 dark:text-gray-300">
-                    {product.inStock ? (
-                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">Yes</span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">No</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-gray-700 dark:text-gray-300">
-                    {isTracked(product) ? (
-                      <>
-                        <span className="font-medium">{totalPairs(product)} pairs</span>
-                        {lowSizes(product).length > 0 && (
-                          <span className="block text-xs text-orange-600 dark:text-orange-400">
-                            Low: {lowSizes(product).map((e) => `${e.size || 'stock'} (${e.quantity})`).join(', ')}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Not tracked</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Link to={`/products/${product._id}`} className="mr-2">
-                      <Button variant="outline" size="sm">View</Button>
-                    </Link>
-                    <Link to={`/products/edit/${product._id}`} className="mr-2">
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </Link>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDelete(product._id)}
-                      className="bg-red-500 text-white hover:bg-red-600"
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+            <thead>
+              <tr>
+                <Th>Product</Th>
+                <Th className="text-right">Price</Th>
+                <Th>Stock</Th>
+                <Th><span className="sr-only">Actions</span></Th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((product) => {
+                const low = lowSizes(product);
+                return (
+                  <tr key={product._id}>
+                    <Td>
+                      <Link to={`/products/${product._id}`} className="flex items-center gap-3 hover:opacity-80">
+                        <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-surface">
+                          {product.img?.[0] && (
+                            <img src={product.img[0]} alt="" loading="lazy" className="img-outline h-full w-full object-cover" />
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{product.title}</span>
+                          <span className="block text-xs uppercase tracking-wider text-muted-foreground">{product.brand}</span>
+                        </span>
+                      </Link>
+                    </Td>
+                    <Td className="tnum whitespace-nowrap text-right font-semibold">{formatKsh(product.price)}</Td>
+                    <Td>
+                      {isTracked(product) ? (
+                        <div>
+                          <span className="tnum font-semibold">{pairsOnHand(product)} pairs</span>
+                          {product.inStock === false && <Badge variant="brand" className="ml-2">Sold out</Badge>}
+                          {low.length > 0 && product.inStock !== false && (
+                            <span className="mt-0.5 block text-xs text-brand">
+                              Low: {low.map((e) => `${e.size || 'stock'} (${e.quantity})`).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          Not tracked · {product.inStock === false ? 'marked sold out' : 'marked in stock'}
+                        </span>
+                      )}
+                    </Td>
+                    <Td className="whitespace-nowrap text-right">
+                      <Button asChild variant="outline" size="sm" className="mr-2">
+                        <Link to={`/products/edit/${product._id}`}>Edit</Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setDeleting(product); setDeleteError(''); }}>
+                        Delete
+                      </Button>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
           </Table>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </Panel>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        title="Delete product?"
+        description={deleting && `“${deleting.title}” disappears from the store. Past orders keep their own record of it.`}
+        confirmLabel="Delete"
+        tone="destructive"
+        onConfirm={confirmDelete}
+        busy={busy}
+        error={deleteError}
+      />
+    </>
   );
 };
 

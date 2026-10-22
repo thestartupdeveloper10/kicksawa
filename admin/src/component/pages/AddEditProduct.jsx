@@ -1,16 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, X } from 'lucide-react';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
 import app from '../../services/firebase';
-import { publicRequest, userRequest } from '../../services/requestMethods';
+import { publicRequest, userRequest, apiError } from '../../services/requestMethods';
+import { ErrorNote, LoadingRows, PageHeader, Panel } from '@/components/admin';
+import { Button } from '@/components/ui/button';
+import { Field, Input, Textarea } from '@/components/ui/field';
+import { cn } from '@/lib/utils';
 
 const parseList = (text) => text.split(",").map((item) => item.trim()).filter(Boolean);
+// The storefront only renders hex colours as swatches.
+const isHex = (value) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
+
+const Toggle = ({ id, checked, onChange, children }) => (
+  <label htmlFor={id} className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      className="h-5 w-5 rounded border-line-strong accent-foreground"
+    />
+    {children}
+  </label>
+);
 
 const AddEditProduct = () => {
   const { id } = useParams();
@@ -29,7 +44,7 @@ const AddEditProduct = () => {
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   // Stock is per size; a product without sizes keeps its count under ''.
-  const [trackStock, setTrackStock] = useState(false);
+  const [trackStock, setTrackStock] = useState(!id);
   const [stock, setStock] = useState({});
   // The version the editor loaded, so the server can refuse a save that would
   // overwrite stock sold while this form was open.
@@ -61,8 +76,7 @@ const AddEditProduct = () => {
         setStock(tracked ? Object.fromEntries(data.stock.map((e) => [e.size, String(e.quantity)])) : {});
         setVersion(data.__v);
       } catch (err) {
-        console.error('Failed to load product', err);
-        if (!cancelled) setError('Could not load this product.');
+        if (!cancelled) setError(apiError(err, 'Could not load this product.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,10 +96,7 @@ const AddEditProduct = () => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles(selectedFiles);
-
-    // Create preview URLs
-    const newPreviews = selectedFiles.map(file => URL.createObjectURL(file));
-    setPreviews(newPreviews);
+    setPreviews(selectedFiles.map(file => URL.createObjectURL(file)));
   };
 
   const removeImage = (index) => {
@@ -103,18 +114,10 @@ const AddEditProduct = () => {
 
         uploadTask.on(
           "state_changed",
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log("Upload is " + progress + "% done");
-          },
-          (error) => {
-            console.error("Upload error:", error);
-            reject(error);
-          },
+          null,
+          (uploadError) => reject(uploadError),
           () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-              resolve(downloadURL);
-            });
+            getDownloadURL(uploadTask.snapshot.ref).then(resolve, reject);
           }
         );
       });
@@ -124,6 +127,7 @@ const AddEditProduct = () => {
   };
 
   const sizes = parseList(size);
+  const colors = parseList(color);
   // One row per size, or a single row for a product sold without sizes.
   const stockRows = sizes.length > 0 ? sizes : [''];
 
@@ -145,7 +149,7 @@ const AddEditProduct = () => {
         img: [...existingImages, ...imageUrls],
         categories: parseList(categories),
         size: sizes,
-        color: parseList(color),
+        color: colors,
         price: parseFloat(inputs.price),
         // An empty list turns tracking off and hands inStock back to the switch.
         stock: trackStock ? stockList : [],
@@ -153,152 +157,178 @@ const AddEditProduct = () => {
 
       if (id) {
         await userRequest.put(`/products/${id}`, { ...productData, __v: version });
+        navigate(`/products/${id}`);
       } else {
-        await userRequest.post('/products', productData);
+        const { data } = await userRequest.post('/products', productData);
+        navigate(`/products/${data._id}`);
       }
-      navigate('/products');
     } catch (err) {
-      console.error('Error saving product:', err);
-      setError(err.response?.data?.error || 'Could not save the product.');
+      setError(apiError(err, 'Could not save the product.'));
     } finally {
       setIsUploading(false);
     }
   };
 
-  if (loading) return <div className="text-center text-gray-700 dark:text-gray-300">Loading...</div>;
+  if (loading) return <LoadingRows rows={8} />;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold">{id ? 'Edit Product' : 'Add New Product'}</h2>
+    <>
+      <Link
+        to={id ? `/products/${id}` : '/products'}
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> {id ? 'Back to product' : 'Products'}
+      </Link>
+      <PageHeader eyebrow="Catalogue" title={id ? 'Edit product' : 'New product'} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{id ? 'Edit Product Details' : 'New Product Details'}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" value={inputs.title} onChange={handleChange} required />
+      {error && <ErrorNote>{error}</ErrorNote>}
+
+      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
+          <Panel title="Details" bodyClassName="space-y-5">
+            <Field label="Title">
+              {({ id: fid }) => <Input id={fid} name="title" value={inputs.title} onChange={handleChange} required />}
+            </Field>
+            <Field label="Description">
+              {({ id: fid }) => <Textarea id={fid} name="desc" rows={5} value={inputs.desc} onChange={handleChange} required />}
+            </Field>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Brand">
+                {({ id: fid }) => <Input id={fid} name="brand" value={inputs.brand} onChange={handleChange} required />}
+              </Field>
+              <Field label="Price (Ksh)">
+                {({ id: fid }) => (
+                  <Input id={fid} name="price" type="number" min="0" step="1" value={inputs.price} onChange={handleChange} required />
+                )}
+              </Field>
             </div>
-            <div>
-              <Label htmlFor="desc">Description</Label>
-              <Textarea id="desc" name="desc" value={inputs.desc} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="brand">Brand</Label>
-              <Input id="brand" name="brand" value={inputs.brand} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="images">Images</Label>
-              {existingImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 my-2">
-                  {existingImages.map((url, index) => (
-                    <div key={url} className="relative">
-                      <img src={url} alt={`Image ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-                      <button
-                        type="button"
-                        onClick={() => setExistingImages(existingImages.filter((_, i) => i !== index))}
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                      >
-                        ×
-                      </button>
+            <Field label="Categories" hint="Comma-separated, e.g. men, running">
+              {({ id: fid, describedBy }) => (
+                <Input id={fid} describedBy={describedBy} value={categories} onChange={(e) => setCategories(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Sizes" hint="Comma-separated EU sizes, e.g. 40, 41, 42. Leave empty for one size.">
+              {({ id: fid, describedBy }) => (
+                <Input id={fid} describedBy={describedBy} value={size} onChange={(e) => setSize(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Colours" hint="Comma-separated hex values, e.g. #000000, #ffffff">
+              {({ id: fid, describedBy }) => (
+                <div>
+                  <Input id={fid} describedBy={describedBy} value={color} onChange={(e) => setColor(e.target.value)} />
+                  {colors.some((c) => !isHex(c)) && (
+                    <p className="mt-1.5 text-sm text-brand">
+                      Colours outlined in red aren&apos;t hex values, so the store won&apos;t show them.
+                    </p>
+                  )}
+                  {colors.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {colors.map((c) => (
+                        <span
+                          key={c}
+                          title={c}
+                          className={cn(
+                            'inline-block h-6 w-6 rounded-full ring-1',
+                            isHex(c) ? 'ring-line-strong' : 'ring-destructive'
+                          )}
+                          style={isHex(c) ? { backgroundColor: c } : undefined}
+                        />
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
-              <Input id="images" type="file" multiple onChange={handleFileChange} />
-              {previews.length > 0 && (
-                <div className="mt-2">
-                  <p>Image Previews:</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {previews.map((preview, index) => (
-                      <div key={index} className="relative">
-                        <img src={preview} alt={`Preview ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="categories">Categories (comma-separated)</Label>
-              <Input id="categories" name="categories" value={categories} onChange={(e) => setCategories(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="size">Sizes (comma-separated)</Label>
-              <Input id="size" name="size" value={size} onChange={(e) => setSize(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="color">Colors (comma-separated)</Label>
-              <Input id="color" name="color" value={color} onChange={(e) => setColor(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="price">Price (Ksh)</Label>
-              <Input id="price" name="price" type="number" step="0.01" value={inputs.price} onChange={handleChange} required />
-            </div>
+            </Field>
+          </Panel>
 
-            <div className="space-y-3 rounded-md border p-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="trackStock"
-                  checked={trackStock}
-                  onCheckedChange={(checked) => setTrackStock(Boolean(checked))}
-                />
-                <Label htmlFor="trackStock">Track stock</Label>
+          <Panel title="Images">
+            {existingImages.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-3">
+                {existingImages.map((url, index) => (
+                  <div key={url} className="relative">
+                    <img src={url} alt={`Image ${index + 1}`} className="img-outline h-24 w-24 rounded-md bg-surface object-cover" />
+                    <button
+                      type="button"
+                      aria-label={`Remove image ${index + 1}`}
+                      onClick={() => setExistingImages(existingImages.filter((_, i) => i !== index))}
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              {trackStock ? (
-                <>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Pairs on hand. Sales take from these automatically, failed payments and
-                    cancellations put them back, and the product shows as sold out at zero.
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {stockRows.map((s) => (
-                      <div key={s || 'one-size'}>
-                        <Label htmlFor={`stock-${s || 'one-size'}`}>{s ? `Size ${s}` : 'Quantity'}</Label>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+              aria-label="Add images"
+              className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-5 file:py-2.5 file:text-sm file:font-semibold file:text-background"
+            />
+            {previews.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-3">
+                {previews.map((preview, index) => (
+                  <div key={preview} className="relative">
+                    <img src={preview} alt={`New image ${index + 1}`} className="h-24 w-24 rounded-md object-cover" />
+                    <button
+                      type="button"
+                      aria-label={`Remove new image ${index + 1}`}
+                      onClick={() => removeImage(index)}
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        <div className="space-y-6">
+          <Panel title="Stock" bodyClassName="space-y-4">
+            <Toggle id="trackStock" checked={trackStock} onChange={setTrackStock}>Track stock per size</Toggle>
+            {trackStock ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Pairs on hand. Orders take from these automatically; failed payments and cancellations
+                  put them back. A size at zero shows as sold out.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {stockRows.map((s) => (
+                    <Field key={s || 'one-size'} label={s ? `Size ${s}` : 'Quantity'}>
+                      {({ id: fid }) => (
                         <Input
-                          id={`stock-${s || 'one-size'}`}
+                          id={fid}
                           type="number"
                           min="0"
                           step="1"
+                          inputMode="numeric"
                           value={stock[s] ?? ''}
                           placeholder="0"
+                          className="tnum"
                           onChange={(e) => setStock((prev) => ({ ...prev, [s]: e.target.value }))}
                         />
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="inStock"
-                    name="inStock"
-                    checked={inputs.inStock}
-                    onCheckedChange={(checked) => setInputs(prev => ({ ...prev, inStock: checked }))}
-                  />
-                  <Label htmlFor="inStock">In Stock</Label>
+                      )}
+                    </Field>
+                  ))}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <Toggle id="inStock" checked={inputs.inStock} onChange={(checked) => setInputs((prev) => ({ ...prev, inStock: checked }))}>
+                Show as in stock
+              </Toggle>
+            )}
+          </Panel>
 
-            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-            <Button type="submit" disabled={isUploading}>
-              {isUploading ? 'Saving...' : (id ? 'Update Product' : 'Add Product')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <Button type="submit" block disabled={isUploading}>
+            {isUploading ? 'Saving…' : id ? 'Save changes' : 'Add product'}
+          </Button>
+        </div>
+      </form>
+    </>
   );
 };
 
