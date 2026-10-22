@@ -6,6 +6,7 @@ const Product = require("../models/product");
 const config = require("../utils/config");
 const mpesa = require("../utils/mpesa");
 const { refreshPayment } = require("../utils/payments");
+const inventory = require("../utils/inventory");
 const {
   verifyToken,
   verifyTokenAndAuthorization,
@@ -77,8 +78,21 @@ const priceItems = async (items) => {
     }
 
     const sizes = product.size || [];
-    if (sizes.length > 0 && !sizes.some((size) => sameOption(size, item.size))) {
+    // Keep the catalogue's own spelling of the size, so stock lookups and the
+    // order agree with what the admin entered.
+    const size = sizes.find((option) => sameOption(option, item.size));
+    if (sizes.length > 0 && size === undefined) {
       return { error: `Choose an available size for ${product.title}.` };
+    }
+
+    const tracked = inventory.isTracked(product);
+    const stockEntry = tracked ? inventory.stockEntryFor(product, size ?? "") : null;
+    if (tracked && !(stockEntry?.quantity > 0)) {
+      return {
+        error: size
+          ? `${product.title} in size ${size} is sold out.`
+          : `${product.title} is sold out.`,
+      };
     }
     const colors = product.color || [];
     if (colors.length > 0 && item.color && !colors.some((color) => sameOption(color, item.color))) {
@@ -89,9 +103,12 @@ const priceItems = async (items) => {
       productId: String(product._id),
       quantity: item.quantity,
       title: product.title,
-      size: item.size ? String(item.size).trim() : undefined,
+      size: size !== undefined ? String(size) : undefined,
       color: item.color ? String(item.color).trim().toLowerCase() : undefined,
       unitPrice: product.price,
+      // Not saved on the order; used to work out what to hold.
+      tracked,
+      stockSize: stockEntry?.size,
     });
   }
 
@@ -172,6 +189,18 @@ orderRouter.post("/checkout", verifyToken, checkoutLimiter, async (req, res) => 
     return res.status(400).json({ error });
   }
 
+  // Hold the pairs before the order exists, so the last one cannot go to two
+  // customers who are both waiting on their phones.
+  const holds = inventory.holdsFor(lines);
+  const taken = await inventory.takeStock(holds);
+  if (!taken.ok) {
+    const line = lines.find((l) => l.productId === taken.failed.productId);
+    const label = taken.failed.size ? `${line.title} in size ${taken.failed.size}` : line.title;
+    return res.status(409).json({
+      error: `Not enough of ${label} left for your bag. Please lower the quantity or choose another size.`,
+    });
+  }
+
   const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
   const deliveryFee = subtotal >= config.FREE_DELIVERY_THRESHOLD ? 0 : config.DELIVERY_FEE;
   // M-PESA only takes whole shillings.
@@ -183,7 +212,8 @@ orderRouter.post("/checkout", verifyToken, checkoutLimiter, async (req, res) => 
       userId: req.user.id,
       idempotencyKey,
       idempotencyFingerprint: fingerprint,
-      products: lines,
+      products: lines.map(({ tracked, stockSize, ...line }) => line),
+      inventory: { status: holds.length > 0 ? "held" : "none", held: holds },
       subtotal,
       deliveryFee,
       amount,
@@ -191,6 +221,8 @@ orderRouter.post("/checkout", verifyToken, checkoutLimiter, async (req, res) => 
       payment: { method: "mpesa", status: "awaiting", phone: msisdn },
     });
   } catch (err) {
+    // No order means nothing holds these pairs; put them straight back.
+    await inventory.returnStock(holds);
     // Two requests with the same key raced past the lookup above; the unique
     // index let exactly one create the order, so answer as its replay.
     if (err.code === 11000) {
@@ -221,6 +253,7 @@ orderRouter.post("/checkout", verifyToken, checkoutLimiter, async (req, res) => 
     order.payment.resultDesc = "Could not reach M-PESA";
     order.status = "cancelled";
     await order.save();
+    await inventory.releaseOrderStock(order);
     return res.status(502).json(PUSH_FAILED);
   }
 });
@@ -268,13 +301,21 @@ orderRouter.post("/", verifyTokenAndAdmin, async (req, res) => {
 
 orderRouter.put("/:id", verifyTokenAndAdmin, async (req, res) => {
   try {
+    // Payment and stock records are the server's to keep; an edit cannot
+    // rewrite them.
+    const { payment, inventory: _inventory, idempotencyKey, idempotencyFingerprint, ...changes } = req.body;
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       {
-        $set: req.body,
+        $set: changes,
       },
       { new: true }
     );
+    // Cancelling puts the pairs back on the shelf (once, however often it is
+    // cancelled).
+    if (updatedOrder && changes.status === "cancelled") {
+      await inventory.releaseOrderStock(updatedOrder);
+    }
     res.status(200).json(updatedOrder);
   } catch (err) {
     res.status(500).json(err);

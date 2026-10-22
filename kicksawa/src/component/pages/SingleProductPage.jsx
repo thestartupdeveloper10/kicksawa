@@ -197,6 +197,21 @@ const SingleProductPage = () => {
     [product]
   );
 
+  // Pairs left per size, when the shop tracks this product's stock. null for
+  // untracked products, which only have the in/out-of-stock switch.
+  const stockBySize = useMemo(() => {
+    if (!Array.isArray(product?.stock) || product.stock.length === 0) return null;
+    return new Map(product.stock.map((e) => [String(e.size).trim().toLowerCase(), e.quantity]));
+  }, [product]);
+  const pairsLeft = (size) =>
+    stockBySize ? stockBySize.get(String(size ?? '').trim().toLowerCase()) ?? 0 : null;
+
+  // The pairs on hand for what is currently chosen: the selected size, or the
+  // single count of a product without sizes. null when not tracked or no
+  // size is chosen yet.
+  const left = sizes.length > 0 ? (selectedSize ? pairsLeft(selectedSize) : null) : pairsLeft('');
+  const maxQuantity = left === null ? 10 : Math.max(1, Math.min(10, left));
+
   const isInWishlist = Boolean(
     user && wishlist?.wishlists?.[user.id]?.products.some((item) => item._id === id)
   );
@@ -375,21 +390,29 @@ const SingleProductPage = () => {
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {sizes.map((size) => {
                       const isSelected = selectedSize === size;
+                      const soldOut = pairsLeft(size) === 0;
                       return (
                         <button
                           key={size}
                           type="button"
+                          disabled={soldOut}
                           onClick={() => {
                             setSelectedSize(size);
                             setValidation('');
+                            // Never leave more in the stepper than the new size has.
+                            const sizeLeft = pairsLeft(size);
+                            if (sizeLeft !== null) setQuantity((q) => Math.min(q, Math.max(1, sizeLeft)));
                           }}
                           aria-pressed={isSelected}
+                          aria-label={soldOut ? `Size ${size}, sold out` : undefined}
                           className={cn(
                             'tnum flex h-12 items-center justify-center rounded-md border text-sm font-medium',
                             'transition-[border-color,background-color,transform] duration-fast ease-swift active:scale-[0.96]',
-                            isSelected
-                              ? 'border-foreground bg-foreground text-background'
-                              : 'border-line-strong hover:border-foreground'
+                            soldOut
+                              ? 'cursor-not-allowed border-line text-muted-foreground line-through decoration-1 active:scale-100'
+                              : isSelected
+                                ? 'border-foreground bg-foreground text-background'
+                                : 'border-line-strong hover:border-foreground'
                           )}
                         >
                           {size}
@@ -398,6 +421,13 @@ const SingleProductPage = () => {
                     })}
                   </div>
                 </div>
+              )}
+
+              {/* Low stock is worth saying; a healthy count is not. */}
+              {!outOfStock && left !== null && left > 0 && left <= 3 && (
+                <p className="mt-3 text-sm font-medium text-brand">
+                  Only {left} left{sizes.length > 0 ? ` in size ${selectedSize}` : ''}
+                </p>
               )}
 
               {validation && (
@@ -424,8 +454,8 @@ const SingleProductPage = () => {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.min(10, q + 1))}
-                    disabled={quantity >= 10}
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                    disabled={quantity >= maxQuantity}
                     aria-label="Increase quantity"
                     className="flex h-12 w-12 items-center justify-center rounded-full transition-[background-color,transform] duration-fast ease-swift hover:bg-surface active:scale-[0.96] disabled:opacity-30 disabled:hover:bg-transparent"
                   >

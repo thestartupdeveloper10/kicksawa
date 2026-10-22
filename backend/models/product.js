@@ -10,6 +10,19 @@ const ProductSchema = new mongoose.Schema(
     size: { type: Array },
     color: { type: Array },
     price: { type: Number, required: true },
+    // Pairs on hand per size; a product without sizes keeps one entry with
+    // size ''. Left unset, the product is untracked and inStock is the manual
+    // switch it always was. Once set, inStock is derived from it.
+    stock: {
+      type: [
+        {
+          _id: false,
+          size: { type: String, default: "" },
+          quantity: { type: Number, min: 0, default: 0 },
+        },
+      ],
+      default: undefined,
+    },
     inStock: { type: Boolean, default: true },
   },
   { timestamps: true }

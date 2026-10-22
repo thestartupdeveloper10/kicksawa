@@ -1,6 +1,7 @@
 const Order = require('../models/order');
 const User = require('../models/user');
 const mpesa = require('./mpesa');
+const inventory = require('./inventory');
 const logger = require('./logger');
 
 /**
@@ -35,10 +36,13 @@ const settlePayment = async (order, result) => {
 
   if (result.status !== 'success') {
     // Only an unpaid order can fail; a late failure must not undo a payment.
-    await Order.updateOne(
+    const failed = await Order.updateOne(
       { _id: order._id, 'payment.status': 'awaiting' },
       { $set: { ...outcome, 'payment.status': 'failed', status: 'cancelled' } }
     );
+    if (failed.modifiedCount > 0) {
+      await inventory.releaseOrderStock(order);
+    }
     return;
   }
 
@@ -87,6 +91,23 @@ const settlePayment = async (order, result) => {
     await Order.updateOne({ _id: order._id }, { $set: receipt });
   }
   if (settled.modifiedCount > 0) {
+    // A payment that lands after the order was given up on finds its pairs
+    // back on the shelf. Take them again if they are still there; if they
+    // have sold, someone has to sort it out with the customer.
+    const current = await Order.findById(order._id);
+    if (current?.inventory?.status === 'released' && !(await inventory.reholdOrderStock(current))) {
+      logger.error(`Order ${order._id}: paid after its stock was released and resold. Needs review.`);
+      await Order.updateOne(
+        { _id: order._id },
+        {
+          $set: {
+            'payment.status': 'review',
+            'payment.resultDesc': 'Payment received, but an item sold out before it arrived. We will contact you.',
+            status: 'pending',
+          },
+        }
+      );
+    }
     try {
       await rememberPhone(order);
     } catch (error) {
@@ -110,6 +131,18 @@ const refreshPayment = async (order) => {
 const RECONCILE_EVERY_MS = 2 * 60 * 1000;
 const SETTLE_AFTER_MS = 2 * 60 * 1000; // Leave fresh prompts to the customer.
 const ABANDON_AFTER_MS = 10 * 60 * 1000;
+const EXPIRE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/** Gives up on an unpaid order and frees whatever stock it held. */
+const expireOrder = async (order, reason) => {
+  const failed = await Order.updateOne(
+    { _id: order._id, 'payment.status': 'awaiting' },
+    { $set: { 'payment.status': 'failed', 'payment.resultDesc': reason, status: 'cancelled' } }
+  );
+  if (failed.modifiedCount > 0) {
+    await inventory.releaseOrderStock(order);
+  }
+};
 
 /**
  * Safety net for missed callbacks and closed tabs: periodically asks Safaricom
@@ -119,20 +152,29 @@ const reconcileUnpaidOrders = async () => {
   const now = Date.now();
 
   // The prompt never went out (the server stopped between saving the order
-  // and reaching Safaricom), so nothing can ever settle these.
-  await Order.updateMany(
-    {
-      'payment.status': 'awaiting',
-      'payment.checkoutRequestId': { $exists: false },
-      createdAt: { $lt: new Date(now - ABANDON_AFTER_MS) },
-    },
-    { $set: { 'payment.status': 'failed', 'payment.resultDesc': 'Payment was never started', status: 'cancelled' } }
-  );
+  // and reaching Safaricom), so nothing can ever settle these. Orders
+  // Safaricom has said nothing about for a day are given up on too. Either
+  // way the pairs they hold go back on sale.
+  const deadEnds = await Order.find({
+    'payment.status': 'awaiting',
+    $or: [
+      { 'payment.checkoutRequestId': { $exists: false }, createdAt: { $lt: new Date(now - ABANDON_AFTER_MS) } },
+      { createdAt: { $lt: new Date(now - EXPIRE_AFTER_MS) } },
+    ],
+  }).limit(50);
+  for (const order of deadEnds) {
+    const reason = order.payment.checkoutRequestId ? 'Payment expired' : 'Payment was never started';
+    try {
+      await expireOrder(order, reason);
+    } catch (error) {
+      logger.error(`Could not expire order ${order._id}:`, error.message);
+    }
+  }
 
   const stale = await Order.find({
     'payment.status': 'awaiting',
     'payment.checkoutRequestId': { $exists: true },
-    createdAt: { $lt: new Date(now - SETTLE_AFTER_MS), $gt: new Date(now - 24 * 60 * 60 * 1000) },
+    createdAt: { $lt: new Date(now - SETTLE_AFTER_MS), $gt: new Date(now - EXPIRE_AFTER_MS) },
   }).limit(20);
 
   for (const order of stale) {

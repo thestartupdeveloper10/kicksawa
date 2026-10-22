@@ -29,6 +29,19 @@ const OrderSchema = new mongoose.Schema(
     deliveryFee: { type: Number },
     amount: { type: Number, required: true },
     address: { type: Object, required: true },
+    // Stock this order took from tracked products (see utils/inventory.js).
+    // 'none' when nothing it contains is tracked.
+    inventory: {
+      status: { type: String, enum: ["none", "held", "released"], default: "none" },
+      held: [
+        {
+          _id: false,
+          productId: { type: String },
+          size: { type: String },
+          quantity: { type: Number },
+        },
+      ],
+    },
     // Fulfilment: pending -> processing -> shipped -> delivered, or cancelled.
     status: { type: String, default: "pending" },
     // Money, tracked apart from fulfilment so an unpaid order is never
