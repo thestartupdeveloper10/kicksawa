@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 
 import FilterPanel from './FilterPanel';
 import ProductGrid from './ProductGrid';
@@ -20,6 +20,41 @@ import {
 } from '@/lib/products';
 
 const PAGE_SIZE = 12;
+
+/**
+ * Scroll-linked values for the collection header: the big title drifts down
+ * at about half the scroll speed and fades (parallax), while a compact title
+ * fades into the sticky toolbar as the big one leaves. Transforms and opacity
+ * only, so it never triggers layout; motion is dropped for reduced-motion users.
+ */
+const useHeaderParallax = (heroRef) => {
+  const reduceMotion = useReducedMotion();
+  const heightRef = useRef(1);
+  const { scrollY } = useScroll();
+
+  useLayoutEffect(() => {
+    const el = heroRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      heightRef.current = Math.max(1, el.offsetHeight);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [heroRef]);
+
+  // 0 at the top of the page, 1 once the hero has scrolled out from under the bar.
+  const progress = (y) => Math.min(1, Math.max(0, y / heightRef.current));
+  const reveal = (y) => Math.min(1, Math.max(0, (progress(y) - 0.6) / 0.4));
+
+  const heroY = useTransform(scrollY, (y) => (reduceMotion ? 0 : y * 0.45));
+  const heroOpacity = useTransform(scrollY, (y) => 1 - progress(y));
+  const compactOpacity = useTransform(scrollY, reveal);
+  const compactY = useTransform(scrollY, (y) => (reduceMotion ? 0 : 6 * (1 - reveal(y))));
+
+  return { heroY, heroOpacity, compactOpacity, compactY };
+};
 
 /* -------------------------------------------------------------------------- */
 /*  Sort menu                                                                  */
@@ -214,27 +249,47 @@ const CollectionView = ({
   const activeCount = countActiveFilters(filters);
   const hasRail = showFacets.length > 0;
 
+  const heroRef = useRef(null);
+  const { heroY, heroOpacity, compactOpacity, compactY } = useHeaderParallax(heroRef);
+
   const panel = (
     <FilterPanel facets={facets} active={filters} onToggle={toggleFilter} show={showFacets} />
   );
 
   return (
     <>
-      {/* Collection bar. Sticks under the navbar so sort and filters stay
-          reachable however far the grid runs. */}
-      <div className="sticky top-header z-30 bg-background/90 backdrop-blur-md">
-        <Container className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
-          <div className="min-w-0">
+      {/* Title block. Scrolls normally, but its content drifts at about half
+          speed and fades, so the grid appears to slide up over it. The
+          overflow clip keeps the drifting text inside its own band. */}
+      <div ref={heroRef} className="overflow-hidden">
+        <motion.div style={{ y: heroY, opacity: heroOpacity }}>
+          <Container className="pb-6 pt-8 sm:pb-8 sm:pt-12">
             {eyebrow && (
-              <p className="text-eyebrow font-bold uppercase text-muted-foreground">{eyebrow}</p>
+              <p className="mb-3 text-eyebrow font-bold uppercase text-muted-foreground">{eyebrow}</p>
             )}
-            <h1 className="truncate font-display text-display-sm font-extrabold uppercase font-wide">
+            <h1 className="font-display text-display-lg font-black uppercase leading-[0.95] tracking-tightest font-expanded">
               {title}{' '}
               {!loading && (
                 <span className="tnum text-muted-foreground">({results.length})</span>
               )}
             </h1>
-          </div>
+          </Container>
+        </motion.div>
+      </div>
+
+      {/* Collection bar. Sticks under the navbar so sort and filters stay
+          reachable however far the grid runs; once the big title has gone,
+          a compact one fades in here so you still know where you are. */}
+      <div className="sticky top-header z-30 bg-background/90 backdrop-blur-md">
+        <Container className="flex items-center justify-between gap-4 py-3">
+          <motion.p
+            aria-hidden="true"
+            style={{ opacity: compactOpacity, y: compactY }}
+            className="min-w-0 truncate text-[0.8125rem] font-bold uppercase sm:text-[0.9375rem] sm:font-wide"
+          >
+            {title}
+            {!loading && <span className="tnum text-muted-foreground"> · {results.length}</span>}
+          </motion.p>
 
           <div className="flex items-center gap-1 sm:gap-2">
             {hasRail && (

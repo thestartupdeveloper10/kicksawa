@@ -482,8 +482,12 @@ const Navbar = () => {
     href === '/' ? location.pathname === '/' : location.pathname.startsWith(href);
 
   return (
-    <header className="relative z-50">
-      {/* Utility bar. Scrolls away — only the main bar sticks. */}
+    // The whole header is the sticky element. A sticky child only sticks
+    // within its parent, so the main bar used to scroll away with this
+    // header. On desktop it is offset upward by the utility bar's height
+    // (h-9), so the utility bar scrolls out and the main bar stays pinned.
+    <header className="sticky top-0 z-50 lg:-top-9">
+      {/* Utility bar. Scrolls away — only the main bar stays. */}
       <div className="hidden bg-surface text-muted-foreground lg:block">
         <Container className="flex h-9 items-center justify-end gap-5 text-micro font-medium">
           <span>Deliver to {SITE.locale}</span>
@@ -514,7 +518,7 @@ const Navbar = () => {
       <div
         onMouseLeave={scheduleClose}
         className={cn(
-          'sticky top-0 z-50 bg-background',
+          'relative bg-background',
           'transition-shadow duration-[220ms] ease-swift',
           scrolled ? 'shadow-sm' : 'shadow-none',
           // A hairline only while a panel is open, so the panel reads as
